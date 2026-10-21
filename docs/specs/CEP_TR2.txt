@@ -1,0 +1,210 @@
+--- PAGE 1 ---
+ AgentEdu — Complete Teacher Review 
+ Module Architecture & Workflow 
+ The Teacher Review Module is the component of AgentEdu that connects AI-assisted 
+ student assessment, teacher verification, personalized learning interventions, and 
+ outcome-based progress monitoring. 
+ Its primary purpose is to ensure that students are evaluated on both their answers and their 
+ problem-solving methods, while teachers retain control over important academic decisions. 
+ 1. Complete system architecture 
+ A. User Interface Layer 
+ Student Portal 
+ Answers, code, assignments, reassessment 
+ Teacher Portal 
+ Review, grading, intervention approval 
+ B. API & Access Control Layer 
+ Authentication · Role-based authorization · Input validation · Request tracking 
+ C. Teacher Review Orchestration Engine 
+ Assessment Analyzer 
+ Answer and method evaluation 
+ Evidence Manager 
+ Answers, test results, history 
+ Misconception Analyzer 
+ Potential root causes 
+ Intervention Planner 
+ Activities and alternatives 
+--- PAGE 2 ---
+ D. Teacher Decision & Validation Layer 
+ Accept · Correct · Approve alternative solution · Modify · Reject · Request clarification 
+ Authorization · Safety validation · Academic policy checks 
+ E. Learning Execution Layer 
+ Approved intervention delivery · Guided practice · Independent practice · Reassessment 
+ F. Outcome & Learner Model Layer 
+ Performance comparison · Knowledge-state update · Intervention history · Next 
+ recommendation 
+ G. Data & Audit Layer 
+ PostgreSQL · Versioned decisions · Review records · Outcome history · Audit events 
+ The layers work together through backend APIs. The orchestration engine coordinates the 
+ assessment and intervention modules; the teacher decision layer controls consequential 
+ academic actions; and the outcome layer supplies updated evidence for the next learning 
+ cycle. 
+ 2. Complete workflow from student submission to next 
+ intervention 
+--- PAGE 3 ---
+
+--- PAGE 4 ---
+
+--- PAGE 5 ---
+ 3. Detailed workflow of each stage 
+ 1.  Student submission 
+ The student submits an answer, programming solution, mathematical derivation, 
+ explanation, or assignment. The system stores the original submission and 
+ associates it with the question, assessment, and student. 
+ 2.  AI assessment and method analysis 
+ The assessment engine checks the answer against the question requirements. For 
+ code, it can use tests and sandbox execution; for mathematics, it can check 
+ calculations and intermediate steps; for written answers, it can compare the response 
+ with a defined rubric. 
+ It produces a preliminary result, supporting evidence, possible errors, and an 
+ uncertainty indicator. 
+ 3.  Evidence preparation 
+ The evidence manager assembles the student's response, expected criteria, 
+ available test results, previous related errors, and relevant learning history into a 
+ review packet. 
+ 4.  Teacher solution review 
+ The teacher inspects the original submission alongside the AI analysis. They can 
+ accept the answer, correct the evaluation, grant partial credit, accept a valid 
+ alternative method, request an explanation, or mark the case for manual review. 
+ 5.  Verified assessment record 
+ The system records the teacher's decision, comments, any mark adjustment, and the 
+ evidence supporting the decision. The original AI evaluation remains available for 
+ audit. 
+ 6.  Learner-model update 
+ The system updates topic mastery and learning history using the verified assessment 
+ evidence. A single incorrect answer should not automatically establish a persistent 
+ misconception. 
+ 7.  Intervention generation 
+ If further learning support is appropriate, the intervention planner generates options 
+ such as a prerequisite lesson, worked example, guided practice, independent 
+ practice, or teacher-led support. 
+ 8.  Teacher intervention review 
+ The teacher compares the alternatives, reviews the supporting evidence, and 
+ approves, modifies, rejects, or requests additional information about the proposed 
+ intervention. 
+ 9.  Validation and delivery 
+ The backend checks teacher authorization, content safety, educational relevance, 
+ and approval status. Only the validated, approved intervention version is delivered to 
+ the student. 
+ 10.  Reassessment and outcome feedback 
+ The student completes a follow-up assessment. The system compares the new 
+ results with the baseline, records the outcome, updates the learner model, and 
+ generates the next recommendation when appropriate. 
+ 4. Teacher dashboard architecture 
+--- PAGE 6 ---
+ The teacher portal should contain six main screens. 
+ 1. Student Progress Dashboard 
+ Displays assessment history, topic mastery, strengths, weaknesses, outstanding reviews, 
+ and recent learning outcomes. 
+
+--- PAGE 7 ---
+ 2. Solution Review Workspace 
+ Shows the student's original answer, expected criteria, AI evaluation, supporting evidence, 
+ test results, and controls for accepting alternative methods or correcting marks. 
+
+--- PAGE 8 ---
+ 3. Learning Diagnosis 
+ Displays recurring errors, possible misconceptions, evidence supporting each diagnosis, and 
+ controls to confirm, reject, or request more evidence. 
+
+--- PAGE 9 ---
+ 4. Intervention Review 
+ Compares candidate learning activities, explains why each was recommended, and allows 
+ the teacher to modify the sequence or approve delivery. 
+
+--- PAGE 10 ---
+ 5. Outcome Monitoring 
+ Shows baseline and reassessment scores, changes in topic mastery, remaining difficulties, 
+ and whether further intervention may be useful. 
+
+--- PAGE 11 ---
+ 6. Decision History 
+ Preserves the original AI recommendation, teacher changes, approved content version, 
+ validation results, delivery status, and outcome records. 
+ 5. Backend and database design 
+ Recommended stack: 
+ ●  Frontend: React + Tailwind CSS 
+ ●  Backend: Python FastAPI 
+ ●  Database: PostgreSQL 
+ ●  AI services: LLM API for preliminary analysis and recommendation generation 
+ ●  Code assessment: Sandboxed execution and automated tests where applicable 
+ ●  Authentication: Role-based access control 
+ ●  Charts: Recharts 
+ Core database entities: 
+ Entity  Purpose 
+ students  and  users  Student and teacher accounts 
+
+--- PAGE 12 ---
+ assessments  and 
+ submissions 
+ Questions, answers and results 
+ review_packets  Evidence and AI evaluation 
+ teacher_decisions  Acceptance, correction and override 
+ records 
+ learner_model_history  Versioned topic mastery and learning state 
+ intervention_candidates  Alternative recommendations 
+ intervention_versions  Approved and modified activities 
+ policy_checks  Safety and authorization validation results 
+ intervention_outcomes  Reassessment and measured outcomes 
+ decision_audit_log  Traceable history of important actions 
+ Important API endpoints: 
+ Endpoint  Purpose 
+ POST /api/submissions/{id}/analyze  Analyze a student submission 
+ GET /api/reviews/{id}  Retrieve evidence for teacher review 
+--- PAGE 13 ---
+ POST /api/reviews/{id}/decision  Accept, correct or override an 
+ evaluation 
+ POST /api/reviews/{id}/interventions  Generate or request intervention 
+ options 
+ POST 
+ /api/reviews/{id}/intervention-decisi 
+ on 
+ Approve, modify or reject an 
+ intervention 
+ POST /api/interventions/{id}/validate  Validate an approved version 
+ POST /api/interventions/{id}/deliver  Deliver the validated activity 
+ POST 
+ /api/interventions/{id}/reassessment 
+ Record follow-up assessment 
+ GET /api/students/{id}/learner-model  Retrieve the current learning state 
+ All endpoints must enforce access permissions on the server, and important decisions 
+ should be versioned and audited. 
+ 6. Proposed novelty and uniqueness 
+ The proposed contribution is the integration of solution-method validation, teacher-controlled 
+ decisions, evidence-linked interventions, and outcome-aware learner-model updates in one 
+ software workflow. 
+ The most distinctive aspects to implement are: 
+ 1.  Alternative-method acceptance: The system helps teachers review valid solutions 
+ that differ from a reference answer, rather than relying exclusively on exact-answer 
+ matching. 
+ 2.  Evidence-linked teacher decisions: Every AI evaluation and learning 
+ recommendation is connected to the relevant student response and supporting 
+ evidence. 
+--- PAGE 14 ---
+ 3.  Versioned intervention approval: The original AI recommendation, teacher 
+ modification, approved version, and delivered activity are preserved separately. 
+ 4.  Outcome-aware adaptation: Reassessment evidence informs the next learning 
+ recommendation while retaining the history of previous decisions. 
+ 5.  Human-supervised learning decisions: Teachers can correct AI errors and prevent 
+ unsuitable interventions from being delivered. 
+ These are proposed design differentiators, not verified claims that no similar system exists. 
+ For copyright registration, the emphasis should be on the original software code, interface, 
+ implementation, and documentation you create. 
+ 7. End-to-end example 
+ A student solves a Java problem using recursion, while the reference solution uses iteration. 
+ ●  The AI flags the solution for review. 
+ ●  The teacher checks the code, output, edge cases, and question constraints. 
+ ●  The teacher accepts the alternative method and awards appropriate marks. 
+ ●  The learner model is updated to reflect demonstrated understanding. 
+ ●  If a genuine knowledge gap remains, the system proposes a worked example and 
+ guided practice. 
+ ●  The teacher modifies the intervention to begin with a worked example and approves 
+ it. 
+ ●  The system validates and delivers the approved activity. 
+ ●  The student completes a follow-up assessment. 
+ ●  The system records the result and uses the new evidence to inform the next 
+ recommendation. 
+ This example demonstrates the complete connection between assessment, teacher 
+ judgment, intervention, and learning feedback. 
+ Final design principle: AgentEdu should not simply automate teachers' decisions. It should 
+ give teachers evidence, control, explainability, and a traceable way to connect each 
+ important decision to what happens next in the student's learning journey. 

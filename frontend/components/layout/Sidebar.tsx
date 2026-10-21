@@ -1,0 +1,154 @@
+"use client";
+
+import React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useAuth } from "@/lib/auth";
+import {
+  LayoutDashboard,
+  GraduationCap,
+  ClipboardList,
+  Network,
+  Bot,
+  BrainCircuit,
+  History,
+  CheckCircle2,
+  Users,
+  Compass,
+  Sliders,
+  ShieldAlert,
+  Settings,
+  BookOpen,
+  LogOut,
+  Sparkles,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+
+export function Sidebar() {
+  const pathname = usePathname();
+  const { user, logout } = useAuth();
+
+  if (!user) return null;
+
+  const role = user.role;
+
+  // Student Links
+  const studentNav = [
+    { title: "Dashboard", href: "/student/dashboard", icon: LayoutDashboard },
+    { title: "My Classes", href: "/student/classes", icon: GraduationCap },
+    { title: "Assessments", href: "/student/assessments", icon: ClipboardList },
+    { title: "Knowledge Map", href: "/student/knowledge-map", icon: Network },
+    { title: "My Misconceptions", href: "/student/misconceptions", icon: BrainCircuit },
+    { title: "Interventions", href: "/student/interventions", icon: CheckCircle2 },
+    { title: "Socratic AI Tutor", href: "/student/ai-tutor", icon: Bot },
+    { title: "Learning History", href: "/student/history", icon: History },
+  ];
+
+  // Teacher Links
+  const teacherNav = [
+    { title: "Teacher Dashboard", href: "/teacher/dashboard", icon: LayoutDashboard },
+    { title: "Classes & Rosters", href: "/teacher/classes", icon: Users },
+    { title: "Review Queue", href: "/teacher/review-queue", icon: ClipboardList },
+    { title: "Misconception Review", href: "/teacher/misconceptions", icon: BrainCircuit },
+    { title: "Intervention Simulator", href: "/teacher/simulator", icon: Sliders },
+    { title: "Outcome Monitoring", href: "/teacher/outcomes", icon: Compass },
+    { title: "Decision History", href: "/teacher/decision-history", icon: History },
+  ];
+
+  // Admin Links
+  const adminNav = [
+    { title: "System Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+    { title: "User Directory", href: "/admin/users", icon: Users },
+    { title: "Audit Trail", href: "/admin/audit", icon: ShieldAlert },
+  ];
+
+  const currentNav =
+    role === "teacher"
+      ? teacherNav
+      : role === "admin"
+      ? adminNav
+      : studentNav;
+
+  return (
+    <aside className="w-64 border-r border-slate-200 bg-white min-h-screen flex flex-col justify-between p-4 sticky top-0 h-screen select-none">
+      <div>
+        {/* Brand Header */}
+        <Link href="/" className="flex items-center gap-2.5 px-3 py-2 mb-6 group">
+          <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-700 flex items-center justify-center text-white shadow-md shadow-indigo-100">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div>
+            <span className="font-bold text-lg text-slate-900 tracking-tight block leading-tight">
+              AgentEdu
+            </span>
+            <span className="text-[11px] text-slate-500 font-medium block">
+              Cognitive AI Education
+            </span>
+          </div>
+        </Link>
+
+        {/* User Role Badge */}
+        <div className="px-3 mb-4">
+          <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+            <div className="truncate">
+              <p className="text-xs font-semibold text-slate-900 truncate">
+                {user.full_name}
+              </p>
+              <p className="text-[11px] text-slate-500 capitalize">{user.role} Portal</p>
+            </div>
+            <Badge
+              variant={
+                role === "teacher"
+                  ? "confirmed"
+                  : role === "admin"
+                  ? "hypothesis"
+                  : "mastered"
+              }
+              className="text-[10px] uppercase font-bold"
+            >
+              {role}
+            </Badge>
+          </div>
+        </div>
+
+        {/* Navigation Section */}
+        <nav className="space-y-1">
+          <p className="px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
+            Navigation
+          </p>
+          {currentNav.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                  isActive
+                    ? "bg-indigo-50 text-indigo-700 font-semibold"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                )}
+              >
+                <Icon className={cn("h-4.5 w-4.5", isActive ? "text-indigo-600" : "text-slate-400")} />
+                <span>{item.title}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Footer / Logout */}
+      <div className="pt-4 border-t border-slate-100 space-y-1">
+        <button
+          onClick={logout}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-700 transition-colors cursor-pointer"
+        >
+          <LogOut className="h-4.5 w-4.5 text-slate-400 group-hover:text-red-600" />
+          <span>Sign Out</span>
+        </button>
+      </div>
+    </aside>
+  );
+}
