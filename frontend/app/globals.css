@@ -1,49 +1,56 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ============================================================
    AgentEdu Design System — Light & Dark Mode
    ============================================================ */
 
 :root {
   /* Light mode palette */
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #F7F8FC;
+  --foreground: #0B0D12;
   --card-bg: #ffffff;
-  --card-border: #e2e8f0;
-  --nav-bg: rgba(255,255,255,0.95);
-  --sidebar-bg: #1e293b;
-  --sidebar-fg: #f1f5f9;
-  --sidebar-active: #4f46e5;
-  --muted: #64748b;
-  --muted-bg: #f1f5f9;
-  --accent: #4f46e5;
-  --accent-light: #e0e7ff;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
+  --card-border: #E2E8F0;
+  --nav-bg: rgba(255, 255, 255, 0.95);
+  --sidebar-bg: #131722;
+  --sidebar-fg: #F5F7FF;
+  --sidebar-active: #6C63FF;
+  --muted: #64748B;
+  --muted-bg: #EDF0F7;
+  --accent: #6C63FF;
+  --accent-light: #EEECFF;
+  --violet: #8B5CF6;
+  --cyan: #42D9FF;
+  --success: #36C98F;
+  --warning: #F4B860;
+  --danger: #FF647C;
   --input-bg: #ffffff;
-  --input-border: #cbd5e1;
+  --input-border: #CBD5E1;
 }
 
 /* Dark mode overrides via .dark class on <html> */
 .dark {
-  --background: #0f172a;
-  --foreground: #f1f5f9;
-  --card-bg: #1e293b;
-  --card-border: #334155;
-  --nav-bg: rgba(15,23,42,0.97);
-  --sidebar-bg: #0f172a;
-  --sidebar-fg: #cbd5e1;
-  --sidebar-active: #6366f1;
-  --muted: #94a3b8;
-  --muted-bg: #1e293b;
-  --accent: #6366f1;
-  --accent-light: #1e1b4b;
-  --success: #34d399;
-  --warning: #fbbf24;
-  --danger: #f87171;
-  --input-bg: #1e293b;
-  --input-border: #475569;
+  /* Obsidian dark mode palette */
+  --background: #0B0D12;
+  --foreground: #F5F7FF;
+  --card-bg: #131722;
+  --card-border: #262C3A;
+  --nav-bg: rgba(11, 13, 18, 0.96);
+  --sidebar-bg: #0B0D12;
+  --sidebar-fg: #929AAF;
+  --sidebar-active: #6C63FF;
+  --muted: #929AAF;
+  --muted-bg: #181C28;
+  --accent: #6C63FF;
+  --accent-light: #1E1B4B;
+  --violet: #8B5CF6;
+  --cyan: #42D9FF;
+  --success: #36C98F;
+  --warning: #F4B860;
+  --danger: #FF647C;
+  --input-bg: #131722;
+  --input-border: #262C3A;
 }
 
 /* ============================================================
@@ -71,22 +78,24 @@ body {
    Dark mode utilities (Tailwind-compatible classes)
    ============================================================ */
 .dark .bg-white { background-color: var(--card-bg) !important; }
-.dark .bg-slate-50 { background-color: #1e293b !important; }
-.dark .bg-slate-100 { background-color: #1e293b !important; }
+.dark .bg-slate-50 { background-color: #131722 !important; }
+.dark .bg-slate-100 { background-color: #181C28 !important; }
 .dark .border-slate-200 { border-color: var(--card-border) !important; }
-.dark .border-slate-100 { border-color: #334155 !important; }
-.dark .text-slate-900 { color: #f8fafc !important; }
-.dark .text-slate-800 { color: #f1f5f9 !important; }
-.dark .text-slate-700 { color: #e2e8f0 !important; }
-.dark .text-slate-600 { color: #cbd5e1 !important; }
-.dark .text-slate-500 { color: #94a3b8 !important; }
-.dark .text-slate-400 { color: #94a3b8 !important; }
-.dark .text-slate-300 { color: #cbd5e1 !important; }
-.dark .text-slate-200 { color: #e2e8f0 !important; }
-.dark .text-slate-100 { color: #f8fafc !important; }
+.dark .border-slate-100 { border-color: #1E2433 !important; }
+.dark .border-slate-700 { border-color: #262C3A !important; }
+.dark .border-slate-800 { border-color: #1E2433 !important; }
+.dark .text-slate-900 { color: #F5F7FF !important; }
+.dark .text-slate-800 { color: #F5F7FF !important; }
+.dark .text-slate-700 { color: #E2E8F0 !important; }
+.dark .text-slate-600 { color: #CBD5E1 !important; }
+.dark .text-slate-500 { color: #929AAF !important; }
+.dark .text-slate-400 { color: #929AAF !important; }
+.dark .text-slate-300 { color: #CBD5E1 !important; }
+.dark .text-slate-200 { color: #E2E8F0 !important; }
+.dark .text-slate-100 { color: #F5F7FF !important; }
 .dark .text-white { color: #ffffff !important; }
-.dark .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.4) !important; }
-.dark .shadow-xl { box-shadow: 0 20px 60px rgba(0,0,0,0.6) !important; }
+.dark .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.5) !important; }
+.dark .shadow-xl { box-shadow: 0 20px 60px rgba(0,0,0,0.7) !important; }
 
 /* Input backgrounds */
 .dark input, .dark textarea, .dark select {

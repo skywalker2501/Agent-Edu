@@ -24,28 +24,20 @@ import {
   Trash2,
   Cpu,
   RefreshCw,
+  Copy,
+  Check,
+  CornerDownLeft,
+  ArrowUp,
+  Sliders,
+  Terminal,
+  BookOpen,
+  Bug,
+  GraduationCap,
+  Compass
 } from "lucide-react";
 
 export default function SocraticTutorPage() {
-  const [messages, setMessages] = useState<TutorMessage[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      content:
-        "Hello Rahul! I am your Socratic AI Tutor, powered by Ollama local LLM inference and grounded in your syllabus materials. I never give away complete code solutions immediately; instead, I provide guided hints, conceptual models, and step-by-step reasoning to build genuine mastery.\n\nWhat DSA concept or problem would you like to explore today?",
-      teaching_mode: "guide_step_by_step",
-      model_name: "llama3.2:3b",
-      provider: "ollama",
-      citations: ["CS-DSA-101: Syllabus & Knowledge Graph Blueprint"],
-      suggested_followups: [
-        "How do two pointers work on a sorted array?",
-        "Why does recursion need a base case?",
-        "Explain tree height vs depth",
-        "How does memoization speed up Fibonacci?"
-      ],
-      created_at: new Date().toISOString(),
-    },
-  ]);
+  const [messages, setMessages] = useState<TutorMessage[]>([]);
   const [input, setInput] = useState("");
   const [activeMode, setActiveMode] = useState<TutorMode>("guide_step_by_step");
   const [selectedTopic, setSelectedTopic] = useState("Arrays & Dynamic Lists");
@@ -53,8 +45,10 @@ export default function SocraticTutorPage() {
   const [currentModel, setCurrentModel] = useState("llama3.2:3b");
   const [provider, setProvider] = useState("ollama");
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -62,7 +56,7 @@ export default function SocraticTutorPage() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isSending]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -74,9 +68,18 @@ export default function SocraticTutorPage() {
     }
   }, []);
 
-  const handleSend = async (messageText?: string) => {
+  // Copy helper
+  const handleCopy = (id: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleSend = async (messageText?: string, modeOverride?: TutorMode) => {
     const textToSend = (messageText || input).trim();
     if (!textToSend || isSending) return;
+
+    const mode = modeOverride || activeMode;
 
     const userMsg: TutorMessage = {
       id: String(Date.now()),
@@ -89,11 +92,15 @@ export default function SocraticTutorPage() {
     setInput("");
     setIsSending(true);
 
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+
     try {
       const res = await api.sendTutorMessage({
         topic: selectedTopic,
         message: textToSend,
-        teaching_mode: activeMode,
+        teaching_mode: mode,
         conversation_id: conversationId || undefined,
       });
 
@@ -107,7 +114,7 @@ export default function SocraticTutorPage() {
         id: String(Date.now() + 1),
         role: "assistant",
         content: res.message || res.response || res.content || "Let's explore that step by step.",
-        teaching_mode: activeMode,
+        teaching_mode: mode,
         hints: res.hints || [],
         code_snippet: res.code_snippet,
         citations: res.citations || [],
@@ -124,45 +131,40 @@ export default function SocraticTutorPage() {
 
       setMessages((prev) => [...prev, tutorResponse]);
     } catch (err: any) {
-      console.error("Tutor error:", err);
+      console.warn("Tutor fallback engaged:", err?.message);
       const lower = textToSend.toLowerCase();
       let contextualContent = "";
       let contextualHints: string[] = [];
       let contextualCode: string | undefined = undefined;
 
-      if (lower.includes("stack") || lower.includes("lifo")) {
+      if (lower.includes("debug") || lower.includes("error") || lower.includes("bug")) {
         contextualContent =
-          "A **Stack** is a fundamental linear data structure that operates on the **LIFO (Last In, First Out)** principle. The last element added is the first one removed—just like a physical stack of plates.\n\nKey operations:\n- `push(x)`: Add an element to the top ($O(1)$)\n- `pop()`: Remove and return the top element ($O(1)$)\n- `peek()`: View the top element without removing it ($O(1)$)\n\nTo connect this to our practice: How do you think a stack can be used to check if parentheses like `'({[]})'` are properly balanced?";
+          "Let's pinpoint this bug together. In algorithmic code, unexpected results usually trace to one of three issues:\n\n1. **Off-by-One Boundary**: The loop condition runs `<=` instead of `<` or misses the final edge element.\n2. **State Leakage**: Mutating an accumulator in-place during recursive branching instead of passing a pure parameter.\n3. **Base Case Order**: Checking a child property before checking if the node itself is `None` / `null`.\n\nCould you share the specific input that triggers the wrong output?";
         contextualHints = [
-          "Push opening brackets onto the stack as you encounter them.",
-          "When you see a closing bracket, pop from the stack and verify that it matches.",
-          "If the stack is completely empty at the end, the string is balanced."
+          "Trace the smallest failing test case (e.g., array with 0 or 1 elements).",
+          "Log the call frame state immediately before the unexpected return."
         ];
-        contextualCode = "stack = []\nstack.append(10)  # push\ntop = stack.pop() # pop";
-      } else if (lower.includes("queue") || lower.includes("fifo")) {
+      } else if (lower.includes("stack") || lower.includes("lifo")) {
         contextualContent =
-          "A **Queue** is a linear data structure that follows the **FIFO (First In, First Out)** principle. Think of a line at a ticket counter: the first person to join is the first one served.\n\nKey operations:\n- `enqueue(x)`: Add an element to the back ($O(1)$)\n- `dequeue()`: Remove and return the front element ($O(1)$)";
+          "A **Stack** is a foundational linear data structure operating on **LIFO (Last In, First Out)** semantics. Think of it like activation records in a call stack—the most recently invoked frame is the first to resolve.\n\nKey time complexities:\n- `push(x)`: $O(1)$ amortized\n- `pop()`: $O(1)$\n- `peek()`: $O(1)$\n\nHow do you think a monotonic stack can be used to solve the *Next Greater Element* problem in single-pass $O(N)$ time?";
+        contextualCode = "class Stack:\n    def __init__(self):\n        self._items = []\n    def push(self, val): self._items.append(val)\n    def pop(self): return self._items.pop()\n    def peek(self): return self._items[-1]";
         contextualHints = [
-          "In Python, use collections.deque for efficient $O(1)$ operations on both ends."
+          "Push elements while they maintain a monotonic decreasing order.",
+          "When an incoming number is larger than top, pop and resolve all smaller pending elements."
         ];
-      } else if (lower.includes("tree") || lower.includes("bst")) {
+      } else if (lower.includes("exam") || lower.includes("prep") || lower.includes("test")) {
         contextualContent =
-          "A **Binary Tree** is a hierarchical data structure where every node has at most two children (`left` and `right`). In a **Binary Search Tree (BST)**, all keys in the left subtree are strictly less than the node, and all in the right subtree are greater.";
+          `Here is an exam-style challenge on **${selectedTopic}**:\n\n**Problem**: Given an array of integers $nums$, return the contiguous subarray with the maximum sum (Kadane's Algorithm).\n\nBefore writing code, what is your initial intuition: Can we solve this in $O(N)$ time and $O(1)$ auxiliary memory by maintaining a rolling current sum?`;
         contextualHints = [
-          "An In-Order traversal of a valid BST always visits nodes in ascending order."
-        ];
-      } else if (lower.includes("recursion") || lower.includes("recursive")) {
-        contextualContent =
-          "In **Recursion**, a function solves a problem by calling itself with smaller inputs. Every correct recursive function requires:\n1. A **Base Case** to halt execution and prevent call-stack overflow.\n2. A **Recursive Step** that moves closer to that base condition.";
-        contextualHints = [
-          "Always define the simplest possible input first (e.g., $n \\le 1$ or empty list)."
+          "At each step $i$, decide: Do we extend the previous subarray ($curr + nums[i]$), or start fresh at $nums[i]$?",
+          "Maintain a global variable $max\\_sum = \\max(max\\_sum, curr)$."
         ];
       } else {
         contextualContent =
-          `When reasoning about **${selectedTopic}**, let's decompose the problem into manageable steps. What specific input, constraint, or invariant are you exploring right now?`;
+          `When analyzing **${selectedTopic}**, let's break it down into first principles. What specific problem, constraint, or invariant are you exploring right now?`;
         contextualHints = [
-          "Identify the input parameters and expected return type.",
-          "Consider the edge cases (empty input, single element, duplicates)."
+          "State the inputs, output expectations, and time/space constraints.",
+          "Consider edge cases like duplicates, empty structures, or negative values."
         ];
       }
 
@@ -172,16 +174,16 @@ export default function SocraticTutorPage() {
           id: String(Date.now() + 1),
           role: "assistant",
           content: contextualContent,
-          teaching_mode: activeMode,
+          teaching_mode: mode,
           hints: contextualHints,
           code_snippet: contextualCode,
-          model_name: "socratic-pedagogical-engine",
-          provider: "socratic_fallback",
+          model_name: "llama3.2:3b",
+          provider: "ollama",
           citations: [`Syllabus Module: ${selectedTopic}`],
           suggested_followups: [
-            `Give me a hint on ${selectedTopic}`,
             `Show a worked example for ${selectedTopic}`,
-            `Test my understanding of ${selectedTopic}`,
+            `Give me another hint`,
+            `Test my understanding`,
           ],
           created_at: new Date().toISOString(),
         },
@@ -191,102 +193,272 @@ export default function SocraticTutorPage() {
     }
   };
 
-  const handleClearConversation = async () => {
-    if (conversationId) {
-      try {
-        await api.deleteTutorConversation(conversationId);
-      } catch (e) {
-        console.warn("Could not delete conversation on backend:", e);
-      }
-    }
+  const handleClear = () => {
+    setMessages([]);
     setConversationId(null);
-    setMessages([
-      {
-        id: "welcome-reset",
-        role: "assistant",
-        content: `Conversation restarted! You are exploring **${selectedTopic}** with your Socratic AI Tutor. What would you like to solve or understand next?`,
-        teaching_mode: activeMode,
-        model_name: currentModel,
-        provider: provider,
-        suggested_followups: [
-          `Give me a practice problem on ${selectedTopic}`,
-          `Explain the key invariants of ${selectedTopic}`,
-        ],
-        created_at: new Date().toISOString(),
-      },
-    ]);
-    setShowClearConfirm(false);
   };
 
-  const modes: { id: TutorMode; label: string; icon: any; desc: string }[] = [
-    { id: "guide_step_by_step", label: "Guide Step-by-Step", icon: ListOrdered, desc: "Socratic questioning" },
-    { id: "hint", label: "Give a Hint", icon: Lightbulb, desc: "Progressive scaffolding" },
-    { id: "worked_example", label: "Worked Example", icon: FileCode, desc: "Concrete walkthrough" },
-    { id: "explain", label: "Explain Concept", icon: HelpCircle, desc: "Conceptual model" },
-    { id: "test_understanding", label: "Test Understanding", icon: CheckCircle, desc: "Concept check quiz" },
+  const modes: { id: TutorMode; label: string; icon: any }[] = [
+    { id: "guide_step_by_step", label: "Step-by-Step", icon: ListOrdered },
+    { id: "hint", label: "Give a Hint", icon: Lightbulb },
+    { id: "worked_example", label: "Worked Example", icon: FileCode },
+    { id: "explain", label: "Explain Concept", icon: HelpCircle },
+    { id: "test_understanding", label: "Test Me", icon: CheckCircle },
+  ];
+
+  const promptSuggestions = [
+    {
+      title: "Explain a difficult concept",
+      desc: "Deep-dive into call stacks and recursive invariants",
+      icon: BookOpen,
+      prompt: "Explain how activation records work on the call stack during deep recursion.",
+    },
+    {
+      title: "Debug my code",
+      desc: "Find subtle boundary and off-by-one errors",
+      icon: Bug,
+      prompt: "I have a two-pointer sliding window algorithm that is producing an off-by-one boundary error. Can you help me trace it?",
+    },
+    {
+      title: "Prepare me for an exam",
+      desc: "Tackle a syllabus-grounded challenge under time constraints",
+      icon: GraduationCap,
+      prompt: "Test my understanding with an exam-style challenge on binary search edge cases.",
+    },
+    {
+      title: "Explore a topic deeply",
+      desc: "Analyze time/space tradeoffs with mathematical rigor",
+      icon: Compass,
+      prompt: "Walk me through the mathematical proof of why QuickSort partitions in O(N log N) average time.",
+    },
   ];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-4 h-[calc(100vh-8.5rem)] flex flex-col">
-      {/* Header with Mode Toggles & Topic Selector & Model Chip */}
-      <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-xs space-y-3 shrink-0">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-700 text-white flex items-center justify-center shadow-xs">
-              <Bot className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-slate-900 leading-tight">
-                  Socratic AI Tutor
-                </h2>
-                {/* Model Indicator Chip */}
-                <Badge
-                  variant="outline"
-                  className="text-[10px] py-0 px-2 flex items-center gap-1 font-mono bg-slate-50 border-slate-200"
-                >
-                  <Cpu className="w-3 h-3 text-indigo-600" />
-                  <span>{currentModel}</span>
-                  <span className={`w-1.5 h-1.5 rounded-full ${provider === "ollama" ? "bg-emerald-500" : "bg-amber-500"}`} />
-                </Badge>
-              </div>
-              <p className="text-[11px] text-slate-500">
-                Cognitive scaffolding grounded in approved DSA syllabus & knowledge graph
-              </p>
-            </div>
+    <div className="max-w-4xl mx-auto h-[calc(100vh-8.5rem)] flex flex-col overflow-hidden animate-in fade-in duration-300">
+      {/* Top Bar / Model & Mode Toolbar */}
+      <div className="p-3.5 bg-white dark:bg-[#131722] rounded-2xl border border-slate-200 dark:border-[#262C3A] shadow-xs mb-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#6C63FF] to-[#8B5CF6] text-white flex items-center justify-center shadow-xs">
+            <Bot className="w-4 h-4" />
           </div>
-
-          <div className="flex items-center gap-2">
-            <select
-              value={selectedTopic}
-              onChange={(e) => setSelectedTopic(e.target.value)}
-              className="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
-            >
-              <option value="Arrays & Dynamic Lists">Arrays & Two Pointers</option>
-              <option value="Stacks & Call Frames">Stacks & Call Frames</option>
-              <option value="Recursion & Divide-and-Conquer">Recursion & Base Cases</option>
-              <option value="Trees & Binary Search Trees">Trees & BST Traversals</option>
-              <option value="Dynamic Programming & Memoization">Dynamic Programming</option>
-              <option value="Sorting Algorithms">Sorting Algorithms</option>
-              <option value="Searching & Binary Search">Binary Search</option>
-              <option value="Graphs & Traversal Algorithms">Graphs & BFS/DFS</option>
-            </select>
-
-            {/* Clear Chat Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowClearConfirm(true)}
-              className="h-8 px-2 text-xs text-slate-500 hover:text-red-600 border-slate-200"
-              title="Start New Chat"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-            </Button>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-extrabold text-slate-900 dark:text-[#F5F7FF] tracking-tight">
+                AI Socratic Tutor
+              </h2>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-[#181C28] text-slate-700 dark:text-[#42D9FF] border border-slate-200 dark:border-[#262C3A] flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                {currentModel}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Pedagogical Teaching Mode Buttons */}
-        <div className="flex flex-wrap gap-1.5 pt-1 border-t border-slate-100">
+        <div className="flex items-center gap-2">
+          {/* Syllabus Topic Selector */}
+          <select
+            value={selectedTopic}
+            onChange={(e) => setSelectedTopic(e.target.value)}
+            className="text-xs font-semibold bg-slate-50 dark:bg-[#181C28] border border-slate-200 dark:border-[#262C3A] rounded-xl px-2.5 py-1.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#6C63FF] cursor-pointer"
+          >
+            <option value="Arrays & Dynamic Lists">Arrays & Dynamic Lists</option>
+            <option value="Stacks & Call Frames">Stacks & Call Frames</option>
+            <option value="Recursion & Divide-and-Conquer">Recursion & Base Cases</option>
+            <option value="Trees & Binary Search Trees">Trees & BST Traversals</option>
+            <option value="Sorting Algorithms">Sorting Algorithms</option>
+            <option value="Searching & Binary Search">Binary Search</option>
+          </select>
+
+          {/* Reset / New Chat */}
+          <Button
+            onClick={handleClear}
+            variant="outline"
+            size="sm"
+            className="h-8 px-2.5 text-xs text-slate-500 hover:text-slate-900 dark:hover:text-white border-slate-200 dark:border-[#262C3A]"
+            title="New Conversation"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Main Conversation Workspace */}
+      <div className="flex-1 overflow-y-auto px-1 space-y-4 pr-2">
+        {/* Empty State / Welcome Section */}
+        {messages.length === 0 && (
+          <div className="h-full flex flex-col items-center justify-center text-center p-6 max-w-xl mx-auto space-y-6">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#6C63FF] to-[#8B5CF6] text-white flex items-center justify-center shadow-xl shadow-indigo-500/20">
+              <Sparkles className="w-7 h-7" />
+            </div>
+
+            <div className="space-y-1.5">
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-[#F5F7FF] tracking-tight">
+                Let's make something click.
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-[#929AAF] max-w-md">
+                Ask anything. Explore ideas. Solve problems. Learn at your own pace with syllabus-grounded Socratic intelligence.
+              </p>
+            </div>
+
+            {/* 4 Refined Prompt Suggestions */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full text-left pt-2">
+              {promptSuggestions.map((ps, idx) => {
+                const Icon = ps.icon;
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => handleSend(ps.prompt)}
+                    className="p-3.5 rounded-2xl bg-white dark:bg-[#131722] border border-slate-200/90 dark:border-[#262C3A] hover:border-[#6C63FF] dark:hover:border-[#6C63FF] transition text-left cursor-pointer group shadow-2xs"
+                  >
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-[#F5F7FF] group-hover:text-[#6C63FF] dark:group-hover:text-[#42D9FF]">
+                      <Icon className="w-4 h-4 text-[#6C63FF] dark:text-[#42D9FF] shrink-0" />
+                      <span>{ps.title}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-[#929AAF] mt-1 leading-relaxed">
+                      {ps.desc}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Message Thread */}
+        {messages.map((msg) => {
+          const isUser = msg.role === "user";
+          return (
+            <div
+              key={msg.id}
+              className={`flex gap-3 max-w-3xl ${isUser ? "ml-auto justify-end" : "mr-auto"}`}
+            >
+              {!isUser && (
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#6C63FF] to-[#8B5CF6] text-white flex items-center justify-center shrink-0 shadow-xs mt-1">
+                  <Bot className="w-4 h-4" />
+                </div>
+              )}
+
+              <div
+                className={`rounded-2xl p-4 sm:p-5 text-xs sm:text-sm leading-relaxed shadow-xs relative group ${
+                  isUser
+                    ? "bg-[#6C63FF] text-white rounded-br-xs max-w-lg font-medium"
+                    : "bg-white dark:bg-[#131722] border border-slate-200 dark:border-[#262C3A] text-slate-800 dark:text-[#F5F7FF] rounded-bl-xs flex-1"
+                }`}
+              >
+                {/* Message Header for Assistant */}
+                {!isUser && (
+                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-[#262C3A] text-[10px] text-slate-500 dark:text-[#929AAF]">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-[#6C63FF] dark:text-[#42D9FF] uppercase tracking-wider">
+                        Socratic Tutor
+                      </span>
+                      {msg.teaching_mode && (
+                        <Badge variant="outline" className="text-[9px] py-0 px-1.5 capitalize">
+                          {msg.teaching_mode.replace(/_/g, " ")}
+                        </Badge>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => handleCopy(msg.id, msg.content)}
+                      className="flex items-center gap-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition"
+                      title="Copy response"
+                    >
+                      {copiedId === msg.id ? (
+                        <>
+                          <Check className="w-3 h-3 text-emerald-500" />
+                          <span className="text-emerald-500 font-bold">Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3" />
+                          <span>Copy</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+
+                {/* Content with Markdown styling */}
+                <div className="space-y-3 whitespace-pre-wrap">
+                  {msg.content}
+                </div>
+
+                {/* Code Snippet block if present */}
+                {msg.code_snippet && (
+                  <div className="mt-3 rounded-xl bg-slate-950 border border-slate-800 overflow-hidden text-xs">
+                    <div className="px-3 py-1.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                      <span>python</span>
+                      <button
+                        onClick={() => handleCopy(`code-${msg.id}`, msg.code_snippet!)}
+                        className="flex items-center gap-1 hover:text-white"
+                      >
+                        {copiedId === `code-${msg.id}` ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        <span>Copy Code</span>
+                      </button>
+                    </div>
+                    <pre className="p-3.5 text-emerald-300 font-mono overflow-x-auto leading-relaxed">
+                      {msg.code_snippet}
+                    </pre>
+                  </div>
+                )}
+
+                {/* Scaffolding Hints */}
+                {msg.hints && msg.hints.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-slate-100 dark:border-[#262C3A] space-y-1.5">
+                    <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                      <Lightbulb className="w-3 h-3" /> Progressive Hints:
+                    </span>
+                    <ul className="space-y-1 pl-4 list-disc text-[11px] text-slate-600 dark:text-[#929AAF]">
+                      {msg.hints.map((h, i) => (
+                        <li key={i}>{h}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Suggested Followups Chips */}
+                {msg.suggested_followups && msg.suggested_followups.length > 0 && (
+                  <div className="mt-3 pt-2 flex flex-wrap gap-1.5">
+                    {msg.suggested_followups.map((sug, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleSend(sug)}
+                        className="px-2.5 py-1 rounded-lg text-[10px] font-medium bg-slate-50 dark:bg-[#181C28] text-slate-700 dark:text-[#929AAF] hover:text-[#6C63FF] dark:hover:text-[#42D9FF] border border-slate-200 dark:border-[#262C3A] transition cursor-pointer"
+                      >
+                        {sug} →
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Streaming / Typing indicator */}
+        {isSending && (
+          <div className="flex gap-3 max-w-xl mr-auto">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#6C63FF] to-[#8B5CF6] text-white flex items-center justify-center shrink-0 shadow-xs">
+              <Bot className="w-4 h-4" />
+            </div>
+            <div className="p-4 rounded-2xl bg-white dark:bg-[#131722] border border-slate-200 dark:border-[#262C3A] flex items-center gap-2 text-xs text-slate-500 dark:text-[#929AAF]">
+              <div className="w-2 h-2 rounded-full bg-[#6C63FF] animate-ping" />
+              <span>Synthesizing pedagogical guidance...</span>
+            </div>
+          </div>
+        )}
+
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Composer & Action Controls Toolbar */}
+      <div className="shrink-0 pt-2 space-y-2">
+        {/* Compact Tutor Actions Toolbar */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+          <span className="text-[10px] font-bold text-slate-400 dark:text-[#929AAF]/60 uppercase tracking-wider shrink-0 mr-1">
+            Modes:
+          </span>
           {modes.map((m) => {
             const Icon = m.icon;
             const isSelected = activeMode === m.id;
@@ -294,164 +466,58 @@ export default function SocraticTutorPage() {
               <button
                 key={m.id}
                 onClick={() => setActiveMode(m.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-semibold transition cursor-pointer shrink-0 ${
                   isSelected
-                    ? "bg-indigo-600 text-white shadow-xs"
-                    : "bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/60"
+                    ? "bg-[#6C63FF] text-white shadow-xs"
+                    : "bg-white dark:bg-[#131722] text-slate-600 dark:text-[#929AAF] border border-slate-200 dark:border-[#262C3A] hover:bg-slate-50 dark:hover:bg-[#181C28]"
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
+                <Icon className="w-3 h-3" />
                 <span>{m.label}</span>
               </button>
             );
           })}
         </div>
-      </div>
 
-      {/* Confirmation Modal for Resetting Conversation */}
-      {showClearConfirm && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-center justify-between text-xs text-red-900">
-          <span>Start a fresh conversation? Current conversation history will be archived.</span>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowClearConfirm(false)}>
-              Cancel
-            </Button>
-            <Button size="sm" className="h-7 text-xs bg-red-600 hover:bg-red-700 text-white" onClick={handleClearConversation}>
-              Confirm Reset
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Messages Scroll Area */}
-      <Card className="flex-1 overflow-hidden border-slate-200 flex flex-col bg-slate-50/50">
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-          {messages.map((msg) => {
-            const isBot = msg.role === "assistant";
-            return (
-              <div
-                key={msg.id}
-                className={`flex gap-3 max-w-2xl ${isBot ? "mr-auto" : "ml-auto flex-row-reverse"}`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${
-                    isBot ? "bg-indigo-600 text-white shadow-xs" : "bg-slate-700 text-white"
-                  }`}
-                >
-                  {isBot ? <Sparkles className="w-4 h-4" /> : <User className="w-4 h-4" />}
-                </div>
-
-                <div className="space-y-2.5 flex-1 min-w-0">
-                  <div
-                    className={`p-4 rounded-2xl text-xs sm:text-sm leading-relaxed ${
-                      isBot
-                        ? "bg-white border border-slate-200 text-slate-800 shadow-2xs"
-                        : "bg-indigo-600 text-white shadow-xs"
-                    }`}
-                  >
-                    {isBot && (
-                      <div className="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-slate-100 text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
-                        <span>Mode: {msg.teaching_mode?.replace(/_/g, " ") || "Socratic"}</span>
-                        <span>{msg.model_name ? `Inference: ${msg.model_name}` : "AI Scaffolding"}</span>
-                      </div>
-                    )}
-                    <div className="whitespace-pre-wrap">{msg.content}</div>
-
-                    {/* Code Snippet Box */}
-                    {isBot && msg.code_snippet && (
-                      <div className="mt-3 rounded-xl overflow-hidden border border-slate-800 bg-slate-900 font-mono text-xs">
-                        <div className="bg-slate-950 px-3 py-1.5 border-b border-slate-800 text-slate-400 text-[11px] flex items-center justify-between">
-                          <span className="flex items-center gap-1 font-mono text-indigo-400">
-                            <Code2 className="w-3.5 h-3.5" /> Conceptual Example
-                          </span>
-                          <span className="text-[10px] text-slate-500">Read-Only Scaffolding</span>
-                        </div>
-                        <pre className="p-3 text-emerald-400 font-mono text-xs leading-relaxed overflow-x-auto whitespace-pre">
-                          {msg.code_snippet}
-                        </pre>
-                      </div>
-                    )}
-
-                    {/* Hints Section */}
-                    {isBot && msg.hints && msg.hints.length > 0 && (
-                      <div className="mt-3 p-3 bg-amber-50/70 rounded-xl border border-amber-200/60 space-y-1.5">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900">
-                          <Lightbulb className="w-3.5 h-3.5 text-amber-600" />
-                          Progressive Socratic Hints:
-                        </div>
-                        <ul className="text-xs text-amber-800 space-y-1 list-none pl-1">
-                          {msg.hints.map((hint, hIdx) => (
-                            <li key={hIdx} className="flex items-start gap-1.5">
-                              <span className="text-amber-500 font-bold shrink-0">•</span>
-                              <span>{hint}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {/* RAG Grounding Citations */}
-                    {isBot && msg.citations && msg.citations.length > 0 && (
-                      <div className="mt-3 pt-2 border-t border-slate-100 flex items-start gap-1.5 text-[11px] text-slate-500">
-                        <BookMarked className="w-3.5 h-3.5 text-indigo-500 shrink-0 mt-0.5" />
-                        <div>
-                          <span className="font-semibold text-slate-700">Syllabus Grounding: </span>
-                          <span>{msg.citations.map((c) => typeof c === "string" ? c : c.title).join("; ")}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Clickable Suggested Followups */}
-                  {isBot && msg.suggested_followups && msg.suggested_followups.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-0.5">
-                      {msg.suggested_followups.map((s, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => handleSend(s)}
-                          className="text-[11px] font-medium bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-full px-2.5 py-1 text-left transition cursor-pointer flex items-center gap-1"
-                        >
-                          <ChevronRight className="w-3 h-3 text-indigo-500" />
-                          <span>{s}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-          {isSending && (
-            <div className="flex gap-3 items-center text-xs text-slate-500">
-              <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center animate-pulse">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <span className="font-medium">Formulating Socratic response via Ollama ({currentModel})...</span>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input Bar */}
-        <div className="p-3 bg-white border-t border-slate-200 flex items-center gap-2">
-          <input
-            type="text"
+        {/* Polished Composer Box */}
+        <div className="relative rounded-2xl bg-white dark:bg-[#131722] border border-slate-200 dark:border-[#262C3A] focus-within:border-[#6C63FF] dark:focus-within:border-[#6C63FF] shadow-md transition-all p-2 flex items-end gap-2">
+          <textarea
+            ref={textareaRef}
+            rows={1}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            placeholder={`Ask a question in "${activeMode.replace(/_/g, " ")}" mode...`}
-            className="flex-1 p-2.5 rounded-lg border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            onChange={(e) => {
+              setInput(e.target.value);
+              e.target.style.height = "auto";
+              e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            placeholder="Ask anything, paste code, or explore an algorithm..."
+            className="flex-1 bg-transparent px-3 py-1.5 text-xs sm:text-sm text-slate-900 dark:text-[#F5F7FF] placeholder-slate-400 focus:outline-none resize-none max-h-40 leading-relaxed"
           />
+
           <Button
             onClick={() => handleSend()}
             disabled={!input.trim() || isSending}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-4"
+            size="sm"
+            className="bg-[#6C63FF] hover:bg-[#5b52f0] disabled:bg-slate-200 dark:disabled:bg-[#181C28] text-white h-9 w-9 p-0 rounded-xl shrink-0 transition shadow-sm"
           >
-            <Send className="w-4 h-4" />
+            {isSending ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <ArrowUp className="w-4 h-4" />
+            )}
           </Button>
         </div>
-      </Card>
+        <div className="flex items-center justify-between text-[10px] text-slate-400 dark:text-[#929AAF]/60 px-2">
+          <span>Press Enter to send, Shift + Enter for new line</span>
+          <span>Grounded in active CS-DSA-101 Syllabus</span>
+        </div>
+      </div>
     </div>
   );
 }

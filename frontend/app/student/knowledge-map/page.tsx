@@ -226,13 +226,13 @@ export default function KnowledgeMapPage() {
   return (
     <div className="space-y-5 animate-in fade-in duration-300 pb-12 pt-1">
       {/* Page Title & View Switcher */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Network className="w-6 h-6 text-indigo-600 shrink-0" />
+          <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+            <Network className="w-6 h-6 text-indigo-600 dark:text-indigo-400 shrink-0" />
             <span>Pedagogical Knowledge Graph & Cognitive Twin</span>
           </h1>
-          <p className="text-xs md:text-sm text-slate-500 mt-0.5">
+          <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 mt-0.5">
             Interactive Bayesian Knowledge Map (BKT) tracking prerequisite dependencies and diagnosed misconception pathways.
           </p>
         </div>

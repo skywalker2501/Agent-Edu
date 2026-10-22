@@ -128,8 +128,8 @@ export default function TakeAssessmentPage() {
 
     return (
       <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-300">
-        <Card className="border-emerald-200 bg-white shadow-lg overflow-hidden">
-          <div className="bg-emerald-600 p-6 text-white text-center">
+        <Card className="border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-800/90 shadow-lg overflow-hidden">
+          <div className="bg-emerald-600 dark:bg-emerald-700 p-6 text-white text-center">
             <CheckCircle2 className="w-12 h-12 mx-auto mb-2 text-white" />
             <h2 className="text-2xl font-bold">Assessment Submitted Successfully!</h2>
             <p className="text-emerald-100 text-sm mt-1">
@@ -138,22 +138,22 @@ export default function TakeAssessmentPage() {
           </div>
           <CardContent className="p-6 sm:p-8 space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                <p className="text-xs text-slate-500 font-medium">Calculated Score</p>
-                <h3 className="text-2xl font-black text-slate-900">{score} / {maxScore}</h3>
+              <div className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-100 dark:border-slate-800">
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Calculated Score</p>
+                <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100">{score} / {maxScore}</h3>
               </div>
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                <p className="text-xs text-slate-500 font-medium">Percentage</p>
-                <h3 className={`text-2xl font-black ${passed ? "text-emerald-600" : "text-amber-600"}`}>
+              <div className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-100 dark:border-slate-800">
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Percentage</p>
+                <h3 className={`text-2xl font-black ${passed ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>
                   {pct}%
                 </h3>
               </div>
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                <p className="text-xs text-slate-500 font-medium">Status</p>
+              <div className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-100 dark:border-slate-800">
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Status</p>
                 <span className={`inline-block mt-1 text-xs font-semibold px-2.5 py-1 rounded-full border ${
                   passed
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                    : "bg-amber-50 text-amber-700 border-amber-200"
+                    ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+                    : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
                 }`}>
                   {passed ? "Passed / Mastered" : "Needs Review"}
                 </span>
@@ -161,12 +161,12 @@ export default function TakeAssessmentPage() {
             </div>
 
             {/* Cognitive Agent Insights */}
-            <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-100 space-y-2">
-              <div className="flex items-center gap-2 text-indigo-900 font-bold text-sm">
-                <Sparkles className="w-4 h-4 text-indigo-600" />
+            <div className="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800 space-y-2">
+              <div className="flex items-center gap-2 text-indigo-900 dark:text-indigo-200 font-bold text-sm">
+                <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                 Cognitive Diagnostic Feedback
               </div>
-              <p className="text-xs text-indigo-800 leading-relaxed">
+              <p className="text-xs text-indigo-800 dark:text-indigo-300 leading-relaxed">
                 {result.next_action_recommendation || result.feedback ||
                   "The Observer and Diagnostic agents analyzed your execution trace. The Learner Model has updated your concept masteries accordingly."}
               </p>
@@ -175,24 +175,24 @@ export default function TakeAssessmentPage() {
             {/* Breakdown per question if answers returned */}
             {result.answers && result.answers.length > 0 && (
               <div className="space-y-3 pt-2">
-                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                   Detailed Results
                 </h4>
                 <div className="space-y-2">
                   {result.answers.map((ans, idx) => (
-                    <div key={ans.id || idx} className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs flex items-center justify-between">
+                    <div key={ans.id || idx} className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-lg border border-slate-200 dark:border-slate-800 text-xs flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         {ans.is_correct ? (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                         ) : (
-                          <XCircle className="w-4 h-4 text-red-500" />
+                          <XCircle className="w-4 h-4 text-red-500 dark:text-red-400" />
                         )}
-                        <span className="font-semibold text-slate-800">Question {idx + 1}</span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">Question {idx + 1}</span>
                         {ans.automated_feedback && (
-                          <span className="text-slate-500 ml-2">({ans.automated_feedback})</span>
+                          <span className="text-slate-500 dark:text-slate-400 ml-2">({ans.automated_feedback})</span>
                         )}
                       </div>
-                      <span className="font-bold text-slate-700">
+                      <span className="font-bold text-slate-700 dark:text-slate-300">
                         {ans.score_awarded ?? 0} / {ans.max_score ?? 10} pts
                       </span>
                     </div>
@@ -201,9 +201,9 @@ export default function TakeAssessmentPage() {
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4 border-t border-slate-100">
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
               <Link href="/student/dashboard" className="w-full sm:w-auto">
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full border-slate-200 dark:border-slate-700 dark:text-slate-200">
                   Return to Dashboard
                 </Button>
               </Link>
@@ -223,14 +223,14 @@ export default function TakeAssessmentPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Quiz Header Bar */}
-      <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 shadow-xs sticky top-20 z-20">
+      <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-800/90 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs sticky top-20 z-20 backdrop-blur-md">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">{assessment?.title}</h2>
-          <p className="text-xs text-slate-500">{assessment?.questions?.length || 0} Questions • Automated grading</p>
+          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">{assessment?.title}</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{assessment?.questions?.length || 0} Questions • Automated grading</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 rounded-lg text-xs font-semibold text-slate-700">
-            <Clock className="w-3.5 h-3.5 text-indigo-600" />
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-700/60 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <Clock className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
             <span>Time: 18:42</span>
           </div>
           <Button
@@ -260,20 +260,20 @@ export default function TakeAssessmentPage() {
           const isShortAnswer = q.question_type === "short_answer";
 
           return (
-            <Card key={q.id} className="border-slate-200">
+            <Card key={q.id} className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">
+                  <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
                     Question {index + 1} of {assessment?.questions?.length ?? 0}
                   </span>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-[10px] uppercase font-bold">
+                    <Badge variant="outline" className="text-[10px] uppercase font-bold border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300">
                       {q.question_type}
                     </Badge>
-                    <span className="text-xs font-semibold text-slate-500">{q.points || 10} pts</span>
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{q.points || 10} pts</span>
                   </div>
                 </div>
-                <CardTitle className="text-base font-semibold text-slate-900 leading-snug">
+                <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100 leading-snug">
                   {q.prompt}
                 </CardTitle>
               </CardHeader>
@@ -293,20 +293,20 @@ export default function TakeAssessmentPage() {
                           onClick={() => handleOptionSelect(q.id, optKey)}
                           className={`w-full text-left p-3.5 rounded-xl border transition-all text-xs sm:text-sm font-medium flex items-center gap-3 cursor-pointer ${
                             isSelected
-                              ? "bg-indigo-50 border-indigo-500 text-indigo-900 ring-2 ring-indigo-500/20"
-                              : "bg-slate-50/50 hover:bg-slate-100/70 border-slate-200 text-slate-700"
+                              ? "bg-indigo-50 dark:bg-indigo-950/50 border-indigo-500 text-indigo-900 dark:text-indigo-200 ring-2 ring-indigo-500/20"
+                              : "bg-slate-50/50 dark:bg-slate-900/40 hover:bg-slate-100/70 dark:hover:bg-slate-900/70 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300"
                           }`}
                         >
                           <div
                             className={`w-6 h-6 rounded-full border flex items-center justify-center text-xs font-bold shrink-0 ${
                               isSelected
                                 ? "border-indigo-600 bg-indigo-600 text-white"
-                                : "border-slate-300 text-slate-600 bg-white"
+                                : "border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-800"
                             }`}
                           >
                             {optKey}
                           </div>
-                          <span className="flex-1 text-slate-800">{optText}</span>
+                          <span className="flex-1 text-slate-800 dark:text-slate-200">{optText}</span>
                         </button>
                       );
                     })}
@@ -321,7 +321,7 @@ export default function TakeAssessmentPage() {
                       value={answers[q.id] || ""}
                       onChange={(e) => handleTextChange(q.id, e.target.value)}
                       placeholder="Type your explanation or response..."
-                      className="w-full p-3 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans"
+                      className="w-full p-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans"
                     />
                   </div>
                 )}
@@ -329,11 +329,11 @@ export default function TakeAssessmentPage() {
                 {/* Code Response Editor */}
                 {isCoding && (
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs text-slate-500 px-1">
-                      <span className="flex items-center gap-1 font-semibold">
-                        <Code2 className="w-3.5 h-3.5 text-indigo-600" /> Solution Code Editor
+                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1">
+                      <span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
+                        <Code2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> Solution Code Editor
                       </span>
-                      <span className="text-[11px] text-slate-400 font-mono">Python 3 Safe Execution Sandbox</span>
+                      <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">Python 3 Safe Execution Sandbox</span>
                     </div>
                     <div className="rounded-xl overflow-hidden border border-slate-800 bg-slate-900 font-mono text-xs">
                       <div className="bg-slate-950 px-4 py-2 border-b border-slate-800 text-slate-400 text-[11px] flex items-center justify-between">

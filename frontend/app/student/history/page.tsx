@@ -56,40 +56,40 @@ export default function StudentHistoryPage() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-          <History className="w-6 h-6 text-indigo-600" /> Learning Activity History & Audit Timeline
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+          <History className="w-6 h-6 text-indigo-600 dark:text-indigo-400" /> Learning Activity History &amp; Audit Timeline
         </h1>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Traceable chronological record of your assessments, cognitive diagnoses, teacher reviews, and outcome measurements.
         </p>
       </div>
 
-      <div className="relative pl-6 border-l-2 border-indigo-200 space-y-8">
+      <div className="relative pl-6 border-l-2 border-indigo-200 dark:border-indigo-800 space-y-8">
         {events.map((ev) => (
           <div key={ev.id} className="relative">
             {/* Timeline Bullet */}
-            <div className="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full bg-indigo-600 ring-4 ring-white" />
+            <div className="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full bg-indigo-600 ring-4 ring-white dark:ring-[#0B0D12]" />
 
-            <Card className="border-slate-200">
+            <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131722]">
               <CardContent className="p-4 sm:p-5 space-y-2">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                  <span className="text-xs font-semibold text-slate-400">{ev.date}</span>
+                  <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">{ev.date}</span>
                   <div className="flex items-center gap-2">
                     {ev.delta && (
-                      <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
                         {ev.delta} Delta
                       </span>
                     )}
                     {ev.score && (
-                      <span className="text-xs font-bold text-slate-700">
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
                         Score: {ev.score}
                       </span>
                     )}
                   </div>
                 </div>
 
-                <h4 className="text-sm font-bold text-slate-900">{ev.title}</h4>
-                <p className="text-xs text-slate-600 leading-relaxed">{ev.description}</p>
+                <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">{ev.title}</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{ev.description}</p>
               </CardContent>
             </Card>
           </div>

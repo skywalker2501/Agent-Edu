@@ -66,8 +66,8 @@ export default function AssessmentDetailPage() {
         </Link>
       </div>
 
-      <Card className="border-slate-200 overflow-hidden shadow-sm">
-        <div className="bg-gradient-to-r from-indigo-900 to-indigo-800 p-8 text-white">
+      <Card className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/90 overflow-hidden shadow-sm">
+        <div className="bg-gradient-to-r from-indigo-900 to-indigo-800 dark:from-indigo-950 dark:to-slate-900 p-8 text-white">
           <div className="flex items-center gap-2 mb-3">
             <Badge variant="outline" className="text-indigo-200 border-indigo-400 bg-indigo-950/40 text-xs">
               {isReassessment ? "Follow-Up Reassessment" : "Diagnostic Check"}
@@ -77,34 +77,34 @@ export default function AssessmentDetailPage() {
             </span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight mb-2">{assessment.title}</h1>
-          <p className="text-sm text-indigo-100 max-w-2xl leading-relaxed">
+          <p className="text-sm text-indigo-100 dark:text-indigo-200 max-w-2xl leading-relaxed">
             {assessment.description || "Diagnostic assessment to evaluate understanding and cognitive model state."}
           </p>
         </div>
 
         <CardContent className="p-6 sm:p-8 space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-              <p className="text-xs text-slate-500 font-medium">Questions</p>
-              <h3 className="text-2xl font-black text-slate-900">{assessment.questions?.length ?? 0}</h3>
+            <div className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-100 dark:border-slate-800">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Questions</p>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100">{assessment.questions?.length ?? 0}</h3>
             </div>
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-              <p className="text-xs text-slate-500 font-medium">Passing Threshold</p>
-              <h3 className="text-2xl font-black text-slate-900">{assessment.passing_score || 60}%</h3>
+            <div className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-100 dark:border-slate-800">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Passing Threshold</p>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100">{assessment.passing_score || 60}%</h3>
             </div>
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-              <p className="text-xs text-slate-500 font-medium">Evaluation</p>
-              <h3 className="text-xs font-bold text-indigo-700 mt-2 bg-indigo-50 py-1 px-2 rounded-md">
+            <div className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-100 dark:border-slate-800">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Evaluation</p>
+              <h3 className="text-xs font-bold text-indigo-700 dark:text-indigo-300 mt-2 bg-indigo-50 dark:bg-indigo-950/50 py-1 px-2 rounded-md border border-indigo-100 dark:border-indigo-800">
                 AI Observer + Diagnostic
               </h3>
             </div>
           </div>
 
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-indigo-600" /> Instructions & Integrity Guardrails
+          <div className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> Instructions & Integrity Guardrails
             </h4>
-            <ul className="text-xs text-slate-600 space-y-1 list-disc list-inside">
+            <ul className="text-xs text-slate-600 dark:text-slate-400 space-y-1 list-disc list-inside">
               <li>Multiple-choice and programming questions will be graded objectively on the backend.</li>
               <li>Your answers feed into the Bayesian Knowledge Tracing (BKT) learner model in real-time.</li>
               <li>If any misconceptions are detected, targeted pedagogical interventions will be prepared.</li>
@@ -112,9 +112,9 @@ export default function AssessmentDetailPage() {
             </ul>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
             <Link href="/student/assessments">
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline" className="border-slate-200 dark:border-slate-700 dark:text-slate-200">Cancel</Button>
             </Link>
             <Link href={`/student/assessments/${assessment.id}/take`}>
               <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold flex items-center gap-2 px-6">

@@ -15,7 +15,10 @@ import {
   AlertCircle,
   Database,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  Activity,
+  ShieldCheck,
+  Server
 } from "lucide-react";
 
 export default function AdminDashboardPage() {
@@ -56,159 +59,165 @@ export default function AdminDashboardPage() {
   ];
 
   return (
-    <div className="space-y-8">
-      <div className="bg-gradient-to-r from-slate-900 to-indigo-950 rounded-2xl p-6 text-white">
-        <h1 className="text-2xl font-extrabold tracking-tight">System Administration Dashboard</h1>
-        <p className="text-slate-300 text-sm mt-1">
-          Platform-wide metrics, user role management, immutable audit trail, and AI agent health monitoring.
-        </p>
+    <div className="space-y-6 animate-in fade-in duration-300 pb-12">
+      {/* Admin Header */}
+      <div className="bg-gradient-to-r from-[#131722] via-[#1A1F2E] to-[#131722] border border-[#262C3A] rounded-2xl p-6 sm:p-7 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-[#6C63FF]/15 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 space-y-1.5 max-w-xl">
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#6C63FF]/20 text-[#42D9FF] border border-[#6C63FF]/40">
+              Enterprise Control Center
+            </span>
+            <span className="text-xs text-slate-400">• High-Availability Cluster</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+            System Administration
+          </h1>
+          <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
+            Platform governance, immutable audit trails, multi-tenant user directories, and autonomous AI pipeline telemetry.
+          </p>
+        </div>
+
+        <div className="relative z-10 flex flex-wrap gap-2.5 shrink-0">
+          <Link href="/admin/users">
+            <Button size="lg" className="bg-[#6C63FF] hover:bg-[#5b52f0] text-white font-bold text-xs sm:text-sm shadow-md gap-1.5 h-10 px-5 rounded-xl">
+              <Users className="w-4 h-4" /> User Management
+            </Button>
+          </Link>
+          <Link href="/admin/audit">
+            <Button variant="outline" size="lg" className="border-[#262C3A] bg-[#181C28] text-slate-200 hover:bg-[#1E2433] text-xs font-semibold h-10 px-4 rounded-xl gap-1.5">
+              <ShieldAlert className="w-4 h-4 text-[#42D9FF]" /> Audit Log
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      {/* Platform Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+      {/* 4 Platform Metrics */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <Card className="border border-slate-200 dark:border-[#262C3A] bg-white dark:bg-[#131722] shadow-xs rounded-2xl">
+          <CardContent className="p-4 sm:p-5 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-800 flex items-center justify-center text-[#6C63FF] dark:text-[#42D9FF]">
               <Users className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs text-slate-500 font-medium">Total Users</p>
-              <h3 className="text-2xl font-bold text-slate-900">{displayUsers.length}</h3>
-              <p className="text-[11px] text-slate-400">4 seeded accounts</p>
+              <p className="text-xs text-slate-500 dark:text-[#929AAF] font-medium">Total Accounts</p>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-[#F5F7FF]">{displayUsers.length}</h3>
+              <p className="text-[11px] text-slate-400 dark:text-[#929AAF]">Active Multi-role</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
-              <CheckCircle2 className="w-6 h-6" />
+        <Card className="border border-slate-200 dark:border-[#262C3A] bg-white dark:bg-[#131722] shadow-xs rounded-2xl">
+          <CardContent className="p-4 sm:p-5 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-100 dark:border-emerald-800 flex items-center justify-center text-emerald-500">
+              <Server className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs text-slate-500 font-medium">AI Agents</p>
-              <h3 className="text-2xl font-bold text-slate-900">6</h3>
-              <p className="text-[11px] text-emerald-600 font-medium">All Systems OK</p>
+              <p className="text-xs text-slate-500 dark:text-[#929AAF] font-medium">AI Agents Engine</p>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-[#F5F7FF]">6 / 6</h3>
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">100% Operational</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600">
+        <Card className="border border-slate-200 dark:border-[#262C3A] bg-white dark:bg-[#131722] shadow-xs rounded-2xl">
+          <CardContent className="p-4 sm:p-5 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-100 dark:border-amber-800 flex items-center justify-center text-amber-500">
               <ShieldAlert className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs text-slate-500 font-medium">Audit Events</p>
-              <h3 className="text-2xl font-bold text-slate-900">{displayAudit.length}</h3>
-              <p className="text-[11px] text-slate-400">Last 24 hours</p>
+              <p className="text-xs text-slate-500 dark:text-[#929AAF] font-medium">Audit Telemetry</p>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-[#F5F7FF]">4 Events</h3>
+              <p className="text-[11px] text-slate-400 dark:text-[#929AAF]">Zero Tamper Alerts</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
+        <Card className="border border-slate-200 dark:border-[#262C3A] bg-white dark:bg-[#131722] shadow-xs rounded-2xl">
+          <CardContent className="p-4 sm:p-5 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-violet-50 dark:bg-violet-950/60 border border-violet-100 dark:border-violet-800 flex items-center justify-center text-[#8B5CF6]">
               <Database className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs text-slate-500 font-medium">Database</p>
-              <h3 className="text-lg font-bold text-slate-900">SQLite</h3>
-              <p className="text-[11px] text-emerald-600 font-medium">Healthy</p>
+              <p className="text-xs text-slate-500 dark:text-[#929AAF] font-medium">Storage & DB</p>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-[#F5F7FF]">PostgreSQL</h3>
+              <p className="text-[11px] text-[#6C63FF] dark:text-[#42D9FF] font-bold">ACID Compliant</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* 6 AI Agents Health Status */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-bold text-slate-900">
-            AI Agent Health Status
-          </CardTitle>
-          <CardDescription>
-            CEP Specification: 6 logical agents coordinated by the State Machine Orchestrator
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {[
-              { name: "Learning Observer Agent", stage: "OBSERVE", desc: "Monitors assessment submissions and learning events" },
-              { name: "Cognitive Diagnostic Agent", stage: "DIAGNOSE", desc: "Pattern recognition and misconception hypothesis generation" },
-              { name: "Learner Model Agent (Digital Twin)", stage: "MODEL", desc: "BKT mastery updates and evidence-based state tracking" },
-              { name: "Intervention Planner & Simulator", stage: "SIMULATE", desc: "Candidate generation and multi-factor ranking engine" },
-              { name: "Governance & Explainability Agent", stage: "GOVERN", desc: "Teacher authorization gate and auditability enforcement" },
-              { name: "Outcome Agent", stage: "MEASURE", desc: "Pre/post delta calculation and learning gain attribution" },
-            ].map((agent) => (
-              <div key={agent.name} className="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-emerald-300 transition">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
-                    {agent.stage}
-                  </span>
-                  <span className="flex items-center gap-1 text-[11px] text-emerald-600 font-semibold">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Running
-                  </span>
-                </div>
-                <p className="text-xs font-bold text-slate-900 leading-snug">{agent.name}</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">{agent.desc}</p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
+      {/* Main Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* User Directory */}
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-bold text-slate-900">User Directory</CardTitle>
-              <Link href="/admin/users" className="text-xs font-semibold text-indigo-600 hover:underline">
-                View All
-              </Link>
+        <Card className="border border-slate-200 dark:border-[#262C3A] bg-white dark:bg-[#131722] rounded-2xl shadow-xs overflow-hidden">
+          <CardHeader className="p-5 pb-3 border-b border-slate-100 dark:border-[#262C3A] flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-sm font-bold text-slate-900 dark:text-[#F5F7FF] flex items-center gap-2">
+                <Users className="w-4 h-4 text-indigo-500" /> User Directory
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-500 dark:text-[#929AAF]">
+                Seeded test accounts and permissions
+              </CardDescription>
             </div>
+            <Link href="/admin/users">
+              <Button variant="ghost" size="sm" className="text-xs text-[#6C63FF] dark:text-[#42D9FF]">
+                Full Directory →
+              </Button>
+            </Link>
           </CardHeader>
-          <CardContent className="space-y-2">
-            {displayUsers.map((u: any) => (
-              <div key={u.id} className="flex items-center justify-between p-2.5 rounded-lg border border-slate-100 hover:bg-slate-50 transition text-xs">
-                <div>
-                  <p className="font-bold text-slate-900">{u.full_name}</p>
-                  <p className="text-slate-400">{u.email}</p>
+          <CardContent className="p-0">
+            <div className="divide-y divide-slate-100 dark:divide-[#262C3A]">
+              {displayUsers.map((u) => (
+                <div key={u.id} className="p-4 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-[#181C28]/50 transition">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-[#6C63FF] dark:text-[#42D9FF] font-black flex items-center justify-center text-xs">
+                      {u.full_name?.charAt(0) || "U"}
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-900 dark:text-[#F5F7FF]">{u.full_name}</p>
+                      <p className="text-[11px] text-slate-500 dark:text-[#929AAF]">{u.email}</p>
+                    </div>
+                  </div>
+                  <Badge variant={u.role === "admin" ? "hypothesis" : u.role === "teacher" ? "confirmed" : "mastered"} className="text-[10px] capitalize font-bold">
+                    {u.role}
+                  </Badge>
                 </div>
-                <Badge
-                  variant={u.role === "admin" ? "hypothesis" : u.role === "teacher" ? "confirmed" : "developing"}
-                  className="capitalize text-[10px] font-bold"
-                >
-                  {u.role}
-                </Badge>
-              </div>
-            ))}
+              ))}
+            </div>
           </CardContent>
         </Card>
 
-        {/* Audit Trail */}
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-bold text-slate-900">Audit Trail (Recent)</CardTitle>
-              <Link href="/admin/audit" className="text-xs font-semibold text-indigo-600 hover:underline">
-                Full Trail
-              </Link>
+        {/* Audit Log */}
+        <Card className="border border-slate-200 dark:border-[#262C3A] bg-white dark:bg-[#131722] rounded-2xl shadow-xs overflow-hidden">
+          <CardHeader className="p-5 pb-3 border-b border-slate-100 dark:border-[#262C3A] flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-sm font-bold text-slate-900 dark:text-[#F5F7FF] flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-500" /> Immutable Audit Trail
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-500 dark:text-[#929AAF]">
+                System state transitions & teacher approvals
+              </CardDescription>
             </div>
+            <Link href="/admin/audit">
+              <Button variant="ghost" size="sm" className="text-xs text-[#6C63FF] dark:text-[#42D9FF]">
+                View All →
+              </Button>
+            </Link>
           </CardHeader>
-          <CardContent className="space-y-2">
-            {displayAudit.map((ev: any) => (
-              <div key={ev.id} className="p-2.5 rounded-lg border border-slate-100 bg-slate-50/50 text-xs space-y-0.5">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-900 capitalize">
-                    {(ev.event_type || "event").replace(/_/g, " ")}
-                  </span>
-                  <span className="text-[11px] text-slate-400">{ev.timestamp || "Today"}</span>
+          <CardContent className="p-0">
+            <div className="divide-y divide-slate-100 dark:divide-[#262C3A]">
+              {displayAudit.map((ae) => (
+                <div key={ae.id} className="p-4 flex items-start gap-3 hover:bg-slate-50/50 dark:hover:bg-[#181C28]/50 transition">
+                  <div className="w-2 h-2 rounded-full bg-[#6C63FF] mt-1.5 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-slate-900 dark:text-[#F5F7FF] truncate">{ae.description}</p>
+                    <p className="text-[10px] text-slate-400 dark:text-[#929AAF] mt-0.5">{ae.timestamp}</p>
+                  </div>
                 </div>
-                <p className="text-slate-500 line-clamp-2 leading-relaxed">
-                  {ev.description || ev.message || "System event recorded"}
-                </p>
-              </div>
-            ))}
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>

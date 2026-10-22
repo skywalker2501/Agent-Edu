@@ -141,10 +141,10 @@ export default function StudentInterventionsPage() {
 
           <CardContent className="p-6 space-y-6">
             <div>
-              <h4 className="text-base font-bold text-slate-900 mb-1">
+              <h4 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">
                 {stackSteps[activeStep].title}
               </h4>
-              <p className="text-xs text-slate-600 leading-relaxed">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                 {stackSteps[activeStep].description}
               </p>
             </div>
@@ -161,18 +161,18 @@ export default function StudentInterventionsPage() {
 
             {/* Visual Call Stack Representation */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+              <div className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
                 <span>Call Stack Memory View (Top of Stack Grows Upward):</span>
-                <span className="text-indigo-600">Return value at this step: <strong>{stackSteps[activeStep].returnVal}</strong></span>
+                <span className="text-indigo-600 dark:text-indigo-400">Return value at this step: <strong>{stackSteps[activeStep].returnVal}</strong></span>
               </div>
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2 min-h-[160px] flex flex-col justify-end">
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-2 min-h-[160px] flex flex-col justify-end">
                 {stackSteps[activeStep].frames.map((f, idx) => (
                   <div
                     key={idx}
                     className={`p-3 rounded-lg border text-xs flex items-center justify-between shadow-2xs transition-all ${
                       idx === 0
                         ? "bg-indigo-600 text-white border-indigo-700 ring-2 ring-indigo-500/30 font-bold"
-                        : "bg-white text-slate-700 border-slate-200 font-medium"
+                        : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 font-medium"
                     }`}
                   >
                     <div className="flex items-center gap-2">
@@ -188,7 +188,7 @@ export default function StudentInterventionsPage() {
             </div>
 
             {/* Stepper Navigation Controls */}
-            <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+            <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
               <Button
                 variant="outline"
                 size="sm"
@@ -221,10 +221,10 @@ export default function StudentInterventionsPage() {
 
             {/* Reassessment CTA when completed */}
             {isCompleted && (
-              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex items-center justify-between animate-in fade-in duration-200">
+              <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 flex items-center justify-between animate-in fade-in duration-200">
                 <div>
                   <h5 className="font-bold text-xs">Ready for Follow-Up Reassessment!</h5>
-                  <p className="text-[11px] text-emerald-700 mt-0.5">
+                  <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
                     Your completion has been recorded. Take the follow-up assessment to measure your score improvement.
                   </p>
                 </div>
@@ -240,12 +240,12 @@ export default function StudentInterventionsPage() {
 
         {/* Right Col: Details & Teacher Authorization */}
         <div className="space-y-6">
-          <Card className="border-slate-200">
+          <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131722]">
             <CardHeader className="pb-3">
               <Badge variant="confirmed" className="w-fit text-[10px] font-bold uppercase mb-1">
                 Teacher Approved
               </Badge>
-              <CardTitle className="text-base font-bold text-slate-900">
+              <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
                 Pedagogical Metadata
               </CardTitle>
               <CardDescription>
@@ -254,33 +254,33 @@ export default function StudentInterventionsPage() {
             </CardHeader>
             <CardContent className="space-y-4 text-xs">
               <div className="space-y-2.5">
-                <div className="flex justify-between py-1.5 border-b border-slate-100 text-slate-600">
+                <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400">
                   <span>Strategy:</span>
-                  <span className="font-semibold text-slate-900">Worked Example & Call Stack Trace</span>
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">Worked Example &amp; Call Stack Trace</span>
                 </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-100 text-slate-600">
+                <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400">
                   <span>Estimated Time:</span>
-                  <span className="font-semibold text-slate-900">15 minutes</span>
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">15 minutes</span>
                 </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-100 text-slate-600">
+                <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400">
                   <span>Difficulty:</span>
-                  <span className="font-semibold text-slate-900">Medium</span>
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">Medium</span>
                 </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-100 text-slate-600">
+                <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400">
                   <span>Target Misconception:</span>
-                  <span className="font-semibold text-amber-700 text-right">Recursive Return Overwriting</span>
+                  <span className="font-semibold text-amber-700 dark:text-amber-400 text-right">Recursive Return Overwriting</span>
                 </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-100 text-slate-600">
+                <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400">
                   <span>Reviewing Teacher:</span>
-                  <span className="font-semibold text-slate-900">Dr. Alan Turing</span>
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">Dr. Alan Turing</span>
                 </div>
               </div>
 
-              <div className="p-3 rounded-lg bg-indigo-50/50 border border-indigo-100 space-y-1">
-                <span className="font-bold text-indigo-950 flex items-center gap-1">
-                  <UserCheck className="w-3.5 h-3.5 text-indigo-600" /> Teacher Comment:
+              <div className="p-3 rounded-lg bg-indigo-50/50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800 space-y-1">
+                <span className="font-bold text-indigo-950 dark:text-indigo-200 flex items-center gap-1">
+                  <UserCheck className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> Teacher Comment:
                 </span>
-                <p className="text-[11px] text-indigo-800 leading-relaxed italic">
+                <p className="text-[11px] text-indigo-800 dark:text-indigo-300 leading-relaxed italic">
                   &quot;Rahul understands the base condition syntax, but needs to visualize why return values multiply correctly during call stack unrolling.&quot;
                 </p>
               </div>
@@ -288,22 +288,22 @@ export default function StudentInterventionsPage() {
           </Card>
 
           {/* Quick Help Tutor Callout */}
-          <Card className="border-indigo-100 bg-gradient-to-tr from-indigo-50/40 to-white">
+          <Card className="border-indigo-100 dark:border-indigo-900 bg-gradient-to-tr from-indigo-50/40 dark:from-indigo-950/30 to-white dark:to-[#131722]">
             <CardContent className="p-5 space-y-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center">
                   <BrainCircuit className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900">Need Socratic Guidance?</h4>
-                  <p className="text-[11px] text-slate-500">Discuss this concept with the AI Tutor</p>
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">Need Socratic Guidance?</h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Discuss this concept with the AI Tutor</p>
                 </div>
               </div>
-              <p className="text-xs text-slate-600 leading-relaxed">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                 You can ask questions step-by-step or request custom hints without spoiling the final answer.
               </p>
               <Link href="/student/ai-tutor" className="block">
-                <Button variant="outline" size="sm" className="w-full text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50">
+                <Button variant="outline" size="sm" className="w-full text-xs border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40">
                   Open Socratic AI Tutor
                 </Button>
               </Link>

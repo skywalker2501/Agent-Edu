@@ -196,10 +196,10 @@ export default function SyllabusPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-indigo-600" /> Syllabus & Curriculum Tree
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+            <BookOpen className="w-6 h-6 text-indigo-600 dark:text-indigo-400" /> Syllabus & Curriculum Tree
           </h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
             Hierarchical course blueprint: Course → Chapter → Topic → Bloom's Taxonomy Learning Objectives.
           </p>
         </div>
@@ -209,7 +209,7 @@ export default function SyllabusPage() {
           <select
             value={selectedCourseId}
             onChange={(e) => setSelectedCourseId(e.target.value)}
-            className="text-xs font-semibold bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-800 shadow-xs focus:ring-2 focus:ring-indigo-500"
+            className="text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-800 dark:text-slate-200 shadow-xs focus:ring-2 focus:ring-indigo-500"
           >
             {courses.map((c) => (
               <option key={c.id} value={c.id}>
@@ -221,49 +221,49 @@ export default function SyllabusPage() {
       </div>
 
       {currentCourse && (
-        <Card className="border-slate-200 shadow-xs">
-          <CardHeader className="bg-slate-50/70 border-b border-slate-100 p-4 sm:p-5">
+        <Card className="border-slate-200 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900">
+          <CardHeader className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800 p-4 sm:p-5">
             <div className="flex items-center gap-2 mb-1">
               <Badge variant="hypothesis" className="font-mono text-[10px]">
                 {currentCourse.code}
               </Badge>
-              <span className="text-xs text-slate-500">• {currentCourse.chapters?.length || 0} Units</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">• {currentCourse.chapters?.length || 0} Units</span>
             </div>
-            <CardTitle className="text-lg font-bold text-slate-900">{currentCourse.title}</CardTitle>
-            <p className="text-xs text-slate-600 mt-1">{currentCourse.description}</p>
+            <CardTitle className="text-lg font-bold text-slate-900 dark:text-slate-100">{currentCourse.title}</CardTitle>
+            <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">{currentCourse.description}</p>
           </CardHeader>
 
           <CardContent className="p-4 sm:p-6 space-y-4">
             {currentCourse.chapters?.map((chapter) => {
               const isChExpanded = !!expandedChapters[chapter.id];
               return (
-                <div key={chapter.id} className="border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
+                <div key={chapter.id} className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xs bg-white dark:bg-slate-900">
                   {/* Chapter Header */}
                   <button
                     onClick={() => toggleChapter(chapter.id)}
-                    className="w-full p-3.5 bg-slate-50 hover:bg-slate-100/80 transition flex items-center justify-between text-left cursor-pointer border-b border-slate-100"
+                    className="w-full p-3.5 bg-slate-50 dark:bg-slate-800/70 hover:bg-slate-100/80 dark:hover:bg-slate-800 transition flex items-center justify-between text-left cursor-pointer border-b border-slate-100 dark:border-slate-800"
                   >
                     <div className="flex items-center gap-2.5">
-                      <Layers className="w-4 h-4 text-indigo-600 shrink-0" />
-                      <span className="text-sm font-bold text-slate-900">{chapter.title}</span>
-                      <span className="text-[11px] text-slate-500">({chapter.topics?.length || 0} Topics)</span>
+                      <Layers className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                      <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{chapter.title}</span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">({chapter.topics?.length || 0} Topics)</span>
                     </div>
                     {isChExpanded ? (
-                      <ChevronDown className="w-4 h-4 text-slate-500" />
+                      <ChevronDown className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                     ) : (
-                      <ChevronRight className="w-4 h-4 text-slate-500" />
+                      <ChevronRight className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                     )}
                   </button>
 
                   {/* Chapter Content / Topics */}
                   {isChExpanded && (
-                    <div className="p-3 sm:p-4 space-y-3 bg-white">
+                    <div className="p-3 sm:p-4 space-y-3 bg-white dark:bg-slate-900">
                       {chapter.topics?.map((topic) => {
                         const isTopExpanded = !!expandedTopics[topic.id];
                         return (
                           <div
                             key={topic.id}
-                            className="border border-slate-100 rounded-xl p-3.5 hover:border-indigo-100 transition bg-slate-50/40"
+                            className="border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 hover:border-indigo-200 dark:hover:border-indigo-800 transition bg-slate-50/50 dark:bg-slate-800/40"
                           >
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                               <div
@@ -271,35 +271,35 @@ export default function SyllabusPage() {
                                 className="flex items-start gap-2 cursor-pointer flex-1"
                               >
                                 {isTopExpanded ? (
-                                  <ChevronDown className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                                  <ChevronDown className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
                                 ) : (
-                                  <ChevronRight className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                                  <ChevronRight className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
                                 )}
                                 <div>
                                   <div className="flex items-center gap-2">
-                                    <span className="text-xs font-bold text-slate-900">{topic.name}</span>
+                                    <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{topic.name}</span>
                                     <Badge variant="developing" className="text-[9px] py-0 px-1 font-mono">
                                       {topic.code}
                                     </Badge>
                                   </div>
-                                  <p className="text-[11px] text-slate-500 mt-0.5">{topic.description}</p>
+                                  <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">{topic.description}</p>
                                 </div>
                               </div>
 
                               {/* Action Launchers */}
                               <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
                                 <Link href={`/student/games?tab=quiz_battle&topic=${encodeURIComponent(topic.name)}`}>
-                                  <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 gap-1 text-slate-700">
+                                  <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 gap-1 text-slate-700 dark:text-slate-200">
                                     <Zap className="w-3 h-3 text-amber-500" /> Quiz
                                   </Button>
                                 </Link>
                                 <Link href={`/student/games?tab=code_quest`}>
-                                  <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 gap-1 text-slate-700">
-                                    <Code2 className="w-3 h-3 text-emerald-600" /> Code
+                                  <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 gap-1 text-slate-700 dark:text-slate-200">
+                                    <Code2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> Code
                                   </Button>
                                 </Link>
                                 <Link href={`/student/ai-tutor?topic=${encodeURIComponent(topic.name)}`}>
-                                  <Button size="sm" className="h-7 text-[10px] px-2 gap-1 bg-indigo-600 hover:bg-indigo-700 text-white">
+                                  <Button size="sm" className="h-7 text-[10px] px-2 gap-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold">
                                     <Sparkles className="w-3 h-3" /> AI Tutor
                                   </Button>
                                 </Link>
@@ -308,15 +308,15 @@ export default function SyllabusPage() {
 
                             {/* Learning Objectives & Concepts Drawer */}
                             {isTopExpanded && (
-                              <div className="mt-3 pt-3 border-t border-slate-200/60 pl-6 space-y-3">
+                              <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 pl-6 space-y-3">
                                 {/* Objectives */}
                                 <div>
-                                  <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1 mb-1.5">
+                                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1 mb-1.5">
                                     <Target className="w-3 h-3 text-indigo-500" /> Bloom's Taxonomy Learning Objectives:
                                   </span>
                                   <ul className="space-y-1">
                                     {topic.learning_objectives?.map((lo) => (
-                                      <li key={lo.id} className="text-xs text-slate-700 flex items-start gap-2">
+                                      <li key={lo.id} className="text-xs text-slate-700 dark:text-slate-300 flex items-start gap-2">
                                         <Badge
                                           variant={getBloomBadgeVariant(lo.bloom_level) as any}
                                           className="text-[9px] py-0 px-1.5 shrink-0 mt-0.5"
@@ -332,12 +332,12 @@ export default function SyllabusPage() {
                                 {/* Core Concepts */}
                                 {topic.concepts?.length > 0 && (
                                   <div>
-                                    <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1 mb-1.5">
+                                    <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1 mb-1.5">
                                       Core Concepts:
                                     </span>
                                     <div className="flex flex-wrap gap-1.5">
                                       {topic.concepts.map((co) => (
-                                        <Badge key={co.id} variant="outline" className="text-[10px] bg-white">
+                                        <Badge key={co.id} variant="outline" className="text-[10px] bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700">
                                           {co.name} (Diff: {co.difficulty}/3)
                                         </Badge>
                                       ))}

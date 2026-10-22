@@ -101,15 +101,15 @@ export default function StudentClassesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <GraduationCap className="w-6 h-6 text-indigo-600" /> My Classes
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+            <GraduationCap className="w-6 h-6 text-indigo-600 dark:text-indigo-400" /> My Classes
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
             Your enrolled courses, live sessions, and class resources.
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={loadClasses} variant="outline" size="sm" className="gap-1.5 text-xs">
+          <Button onClick={loadClasses} variant="outline" size="sm" className="gap-1.5 text-xs text-slate-700 dark:text-slate-200">
             <RefreshCw className="w-3.5 h-3.5" /> Refresh
           </Button>
           <Button onClick={() => { setShowJoinModal(true); setJoinError(null); setJoinSuccess(null); setJoinCode(""); }}
@@ -155,7 +155,7 @@ export default function StudentClassesPage() {
       )}
 
       {error && (
-        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+        <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl text-sm text-red-700 dark:text-red-300">
           <AlertCircle className="w-4 h-4 shrink-0" /> {error}
         </div>
       )}
@@ -163,13 +163,13 @@ export default function StudentClassesPage() {
       {/* Classes Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {[1, 2].map(i => <div key={i} className="h-56 rounded-2xl bg-slate-100 animate-pulse" />)}
+          {[1, 2].map(i => <div key={i} className="h-56 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />)}
         </div>
       ) : classes.length === 0 ? (
         <Card className="text-center py-16 border-dashed">
           <CardContent>
             <GraduationCap className="w-14 h-14 text-slate-200 mx-auto mb-4" />
-            <h3 className="text-base font-bold text-slate-800">No classes yet</h3>
+            <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">No classes yet</h3>
             <p className="text-sm text-slate-500 max-w-sm mx-auto mt-2">
               Ask your teacher for the class join code and click "Join a Class" above.
             </p>
@@ -181,7 +181,7 @@ export default function StudentClassesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {classes.map((c) => (
-            <Card key={c.id} className="border-slate-200 hover:shadow-md transition-shadow">
+            <Card key={c.id} className="border-slate-200 dark:border-slate-800 hover:shadow-md transition-shadow bg-white dark:bg-[#131722]">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between mb-1">
                   <Badge variant="mastered" className="text-[10px] uppercase font-bold">
@@ -189,16 +189,16 @@ export default function StudentClassesPage() {
                   </Badge>
                   <span className="text-xs text-slate-400 font-medium">Spring 2026</span>
                 </div>
-                <CardTitle className="text-lg font-bold text-slate-900">
+                <CardTitle className="text-lg font-bold text-slate-900 dark:text-slate-100">
                   {c.name}
                 </CardTitle>
-                <CardDescription className="text-xs">
+                <CardDescription className="text-xs text-slate-600 dark:text-slate-400">
                   {c.description || "AI-powered closed-loop curriculum with Socratic tutoring."}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                  <div className="flex items-center justify-between text-xs text-slate-600">
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
                     <span className="flex items-center gap-1.5 font-medium">
                       <User className="w-4 h-4 text-slate-400" />
                       {c.teacher_name ? `Instructor: ${c.teacher_name}` : "Instructor"}
@@ -212,12 +212,12 @@ export default function StudentClassesPage() {
 
                 <div className="grid grid-cols-2 gap-2">
                   <Link href="/student/dashboard" className="flex-1">
-                    <Button variant="outline" size="sm" className="w-full text-xs">
+                    <Button variant="outline" size="sm" className="w-full text-xs text-slate-700 dark:text-slate-200">
                       <BookOpen className="w-3.5 h-3.5 mr-1.5" /> My Progress
                     </Button>
                   </Link>
                   <Link href="/student/assessments" className="flex-1">
-                    <Button size="sm" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs">
+                    <Button size="sm" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold">
                       <ClipboardList className="w-3.5 h-3.5 mr-1.5" /> Quizzes <ArrowRight className="w-3 h-3 ml-1" />
                     </Button>
                   </Link>
@@ -230,11 +230,11 @@ export default function StudentClassesPage() {
 
       {/* Join Class Modal */}
       {showJoinModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
-            <div className="flex items-center justify-between p-5 border-b border-slate-100">
-              <h2 className="text-lg font-bold text-slate-900">Join a Class</h2>
-              <button onClick={() => setShowJoinModal(false)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-sm">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Join a Class</h2>
+              <button onClick={() => setShowJoinModal(false)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -242,12 +242,12 @@ export default function StudentClassesPage() {
               {joinSuccess ? (
                 <div className="text-center py-4 space-y-3">
                   <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto animate-bounce" />
-                  <p className="font-semibold text-slate-900">{joinSuccess}</p>
+                  <p className="font-semibold text-slate-900 dark:text-slate-100">{joinSuccess}</p>
                 </div>
               ) : (
                 <>
                   <div>
-                    <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Class Join Code</label>
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Class Join Code</label>
                     <input
                       value={joinCode}
                       onChange={e => setJoinCode(e.target.value.toUpperCase())}
