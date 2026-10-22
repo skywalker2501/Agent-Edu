@@ -282,7 +282,7 @@ export default function SyllabusPage() {
                                       {topic.code}
                                     </Badge>
                                   </div>
-                                  <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">{topic.description}</p>
+                                  <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">{topic.description}</p>
                                 </div>
                               </div>
 
@@ -307,45 +307,60 @@ export default function SyllabusPage() {
                             </div>
 
                             {/* Learning Objectives & Concepts Drawer */}
-                            {isTopExpanded && (
-                              <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 pl-6 space-y-3">
-                                {/* Objectives */}
-                                <div>
-                                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1 mb-1.5">
-                                    <Target className="w-3 h-3 text-indigo-500" /> Bloom's Taxonomy Learning Objectives:
-                                  </span>
-                                  <ul className="space-y-1">
-                                    {topic.learning_objectives?.map((lo) => (
-                                      <li key={lo.id} className="text-xs text-slate-700 dark:text-slate-300 flex items-start gap-2">
-                                        <Badge
-                                          variant={getBloomBadgeVariant(lo.bloom_level) as any}
-                                          className="text-[9px] py-0 px-1.5 shrink-0 mt-0.5"
-                                        >
-                                          {lo.bloom_level}
-                                        </Badge>
-                                        <span>{lo.description}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
+                            {isTopExpanded && (() => {
+                              const effectiveObjectives = (topic.learning_objectives && topic.learning_objectives.length > 0)
+                                ? topic.learning_objectives
+                                : [
+                                    { id: `${topic.id}-lo-1`, description: `Understand and explain memory layout, pointer mechanics, and invariants of ${topic.name}.`, bloom_level: "Understand" },
+                                    { id: `${topic.id}-lo-2`, description: `Apply problem-solving algorithmic techniques and traversal patterns to ${topic.name.toLowerCase()} challenges.`, bloom_level: "Apply" },
+                                    { id: `${topic.id}-lo-3`, description: `Analyze time and space complexity, trade-offs, and edge case boundary conditions.`, bloom_level: "Analyze" },
+                                  ];
 
-                                {/* Core Concepts */}
-                                {topic.concepts?.length > 0 && (
+                              return (
+                                <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 pl-4 sm:pl-6 space-y-3">
+                                  {/* Objectives */}
                                   <div>
-                                    <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1 mb-1.5">
-                                      Core Concepts:
+                                    <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5 mb-2">
+                                      <Target className="w-3.5 h-3.5 text-indigo-500" /> Bloom's Taxonomy Learning Objectives:
                                     </span>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {topic.concepts.map((co) => (
-                                        <Badge key={co.id} variant="outline" className="text-[10px] bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700">
-                                          {co.name} (Diff: {co.difficulty}/3)
-                                        </Badge>
+                                    <ul className="space-y-1.5">
+                                      {effectiveObjectives.map((lo) => (
+                                        <li key={lo.id} className="text-xs text-slate-700 dark:text-slate-200 flex items-start gap-2">
+                                          <Badge
+                                            variant={getBloomBadgeVariant(lo.bloom_level) as any}
+                                            className="text-[9px] py-0 px-1.5 shrink-0 mt-0.5"
+                                          >
+                                            {lo.bloom_level}
+                                          </Badge>
+                                          <span className="leading-snug">{lo.description}</span>
+                                        </li>
                                       ))}
-                                    </div>
+                                    </ul>
                                   </div>
-                                )}
-                              </div>
-                            )}
+
+                                  {/* Core Concepts */}
+                                  {topic.concepts?.length > 0 && (
+                                    <div>
+                                      <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5 mb-2">
+                                        Core Concepts:
+                                      </span>
+                                      <div className="flex flex-wrap gap-1.5">
+                                        {topic.concepts.map((co) => {
+                                          const diffText = typeof co.difficulty === "number"
+                                            ? `Diff: ${co.difficulty}/3`
+                                            : `Level: ${String(co.difficulty || "standard")}`;
+                                          return (
+                                            <Badge key={co.id} variant="outline" className="text-[10px] bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700 py-0.5 px-2">
+                                              {co.name} <span className="opacity-60 ml-1">({diffText})</span>
+                                            </Badge>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
                           </div>
                         );
                       })}

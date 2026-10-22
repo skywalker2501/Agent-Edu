@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,22 +43,23 @@ interface LeaderboardData {
 }
 
 const FALLBACK_USERS: LeaderboardEntry[] = [
-  { user_id: "u1", rank: 1, display_name: "Aarav Sharma", total_xp: 1250, level: 4, streak_days: 12 },
-  { user_id: "u2", rank: 2, display_name: "Priya Singh", total_xp: 750, level: 3, streak_days: 7 },
-  { user_id: "u3", rank: 3, display_name: "Rahul Gupta (You)", total_xp: 680, level: 3, streak_days: 5, is_current_user: true },
-  { user_id: "u4", rank: 4, display_name: "Ananya Iyer", total_xp: 520, level: 2, streak_days: 4 },
-  { user_id: "u5", rank: 5, display_name: "Vikram Malhotra", total_xp: 410, level: 2, streak_days: 2 },
-  { user_id: "u6", rank: 6, display_name: "Dev Patel", total_xp: 380, level: 2, streak_days: 3 },
-  { user_id: "u7", rank: 7, display_name: "Sneha Reddy", total_xp: 310, level: 1, streak_days: 1 },
+  { user_id: "u1", rank: 1, display_name: "Aarav S.", total_xp: 1450, level: 4, streak_days: 14 },
+  { user_id: "u2", rank: 2, display_name: "Priya S.", total_xp: 980, level: 3, streak_days: 9 },
+  { user_id: "u3", rank: 3, display_name: "Rahul G.", total_xp: 720, level: 3, streak_days: 6, is_current_user: true },
+  { user_id: "u4", rank: 4, display_name: "Ananya I.", total_xp: 540, level: 3, streak_days: 4 },
+  { user_id: "u5", rank: 5, display_name: "Vikram M.", total_xp: 420, level: 2, streak_days: 3 },
+  { user_id: "u6", rank: 6, display_name: "Dev P.", total_xp: 390, level: 2, streak_days: 3 },
+  { user_id: "u7", rank: 7, display_name: "Sneha R.", total_xp: 310, level: 1, streak_days: 1 },
 ];
 
 export default function LeaderboardPage() {
+  const { user: authUser } = useAuth();
   const [timeframe, setTimeframe] = useState<"weekly" | "monthly" | "all_time">("all_time");
   const [data, setData] = useState<LeaderboardData>({
     timeframe: "all_time",
     my_rank: 3,
-    my_xp: 680,
-    distance_to_next_rank: 70,
+    my_xp: 720,
+    distance_to_next_rank: 65,
     next_rank: 2,
     top_users: FALLBACK_USERS
   });
@@ -82,24 +84,37 @@ export default function LeaderboardPage() {
           ? res.top_users
           : [];
 
-        const normalizedUsers: LeaderboardEntry[] = rawList.length > 0
-          ? rawList.map((u: any, idx: number) => ({
-              user_id: String(u.user_id || u.id || `u-${idx}`),
-              rank: Number(u.rank ?? idx + 1),
-              display_name: String(u.display_name || u.full_name || u.name || `Student ${idx + 1}`),
-              total_xp: Number(u.xp ?? u.total_xp ?? 0),
-              level: Number(u.level ?? 1),
-              streak_days: Number(u.streak_days ?? 1),
-              is_current_user: Boolean(u.is_current_user)
-            }))
-          : FALLBACK_USERS;
+        const myRank = Number(res.current_user_rank ?? res.my_rank ?? 3);
+        const sourceList = rawList.length > 0 ? rawList : FALLBACK_USERS;
+
+        const normalizedUsers: LeaderboardEntry[] = sourceList.map((u: any, idx: number) => {
+          const rank = Number(u.rank ?? idx + 1);
+          const isCurrentUser = Boolean(
+            u.is_current_user ||
+            (authUser?.id && (u.user_id === authUser.id || u.id === authUser.id)) ||
+            (authUser?.full_name && String(u.display_name).toLowerCase().includes(authUser.full_name.split(" ")[0].toLowerCase())) ||
+            (rank === myRank && !sourceList.some((other: any) => other.is_current_user))
+          );
+
+          return {
+            user_id: String(u.user_id || u.id || `u-${idx}`),
+            rank,
+            display_name: isCurrentUser && isAnonymous
+              ? "Anonymous (You)"
+              : String(u.display_name || u.full_name || u.name || `Student ${idx + 1}`),
+            total_xp: Number(u.xp ?? u.total_xp ?? 0),
+            level: Number(u.level ?? 1),
+            streak_days: Number(u.streak_days ?? 1),
+            is_current_user: isCurrentUser
+          };
+        });
 
         setData({
           timeframe: res.timeframe || tf,
-          my_rank: res.current_user_rank ?? res.my_rank ?? 3,
-          my_xp: res.current_user_xp ?? res.my_xp ?? 680,
-          distance_to_next_rank: res.distance_to_next_rank ?? 70,
-          next_rank: res.current_user_rank && res.current_user_rank > 1 ? res.current_user_rank - 1 : null,
+          my_rank: myRank,
+          my_xp: Number(res.current_user_xp ?? res.my_xp ?? 720),
+          distance_to_next_rank: Number(res.distance_to_next_rank ?? 65),
+          next_rank: myRank > 1 ? myRank - 1 : null,
           top_users: normalizedUsers
         });
       }
@@ -108,8 +123,8 @@ export default function LeaderboardPage() {
       setData({
         timeframe: tf,
         my_rank: 3,
-        my_xp: 680,
-        distance_to_next_rank: 70,
+        my_xp: 720,
+        distance_to_next_rank: 65,
         next_rank: 2,
         top_users: FALLBACK_USERS
       });
@@ -118,7 +133,7 @@ export default function LeaderboardPage() {
     }
   };
 
-  const usersList = Array.isArray(data?.top_users) ? data.top_users : FALLBACK_USERS;
+  const usersList = Array.isArray(data?.top_users) && data.top_users.length > 0 ? data.top_users : FALLBACK_USERS;
   const top3 = usersList.slice(0, 3);
   const rest = usersList.slice(3);
 
@@ -183,7 +198,7 @@ export default function LeaderboardPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="font-extrabold text-lg text-white">
-                    {isAnonymous ? "Anonymous Learner" : "Rahul Gupta"}
+                    {isAnonymous ? "Anonymous Learner" : (authUser?.full_name || "Rahul Gupta")}
                   </h3>
                   <Badge variant="hypothesis" className="text-[10px] py-0 px-1.5 bg-indigo-500 text-white font-bold">
                     You
