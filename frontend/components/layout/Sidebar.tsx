@@ -28,6 +28,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { ThemeToggle } from "@/components/ThemeToggle";
+
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -163,10 +165,12 @@ export function Sidebar() {
           </p>
           <p className="text-[11px] text-slate-600 dark:text-slate-400">10-stage pipeline active</p>
         </div>
+        <ThemeToggle variant="pill" className="mb-2" />
         <button
           onClick={logout}
           className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-400 transition-colors cursor-pointer"
         >
+
           <LogOut className="h-4 w-4 text-slate-400" />
           <span>Sign Out</span>
         </button>

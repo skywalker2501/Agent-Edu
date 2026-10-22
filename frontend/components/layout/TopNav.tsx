@@ -11,15 +11,15 @@ import {
 } from "lucide-react";
 import { NotificationItem } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export function TopNav() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loginAsDemo } = useAuth();
-  const { theme, resolvedTheme, setTheme } = useTheme();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showThemeMenu, setShowThemeMenu] = useState(false);
+
 
   const handleSwitchDemo = async (role: "student_rahul" | "student_priya" | "teacher" | "admin") => {
     await loginAsDemo(role);
@@ -45,27 +45,13 @@ export function TopNav() {
     const handler = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (!target.closest("[data-notifications-dropdown]")) setShowNotifications(false);
-      if (!target.closest("[data-theme-dropdown]")) setShowThemeMenu(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+
   const unreadCount = notifications.filter((n) => !n.is_read).length;
-
-  const themeOptions: { value: "light" | "dark" | "system"; icon: React.ReactNode; label: string }[] = [
-    { value: "light", icon: <Sun className="w-3.5 h-3.5" />, label: "Light" },
-    { value: "dark", icon: <Moon className="w-3.5 h-3.5" />, label: "Dark" },
-    { value: "system", icon: <Monitor className="w-3.5 h-3.5" />, label: "System" },
-  ];
-
-  const currentThemeIcon = theme === "dark" ? (
-    <Moon className="w-4 h-4" />
-  ) : theme === "light" ? (
-    <Sun className="w-4 h-4" />
-  ) : (
-    <Monitor className="w-4 h-4" />
-  );
 
   // Build breadcrumb
   const segments = pathname.split("/").filter(Boolean);
@@ -121,42 +107,9 @@ export function TopNav() {
           ))}
         </div>
 
-        {/* Theme Toggle */}
-        <div className="relative" data-theme-dropdown>
-          <button
-            onClick={() => setShowThemeMenu(!showThemeMenu)}
-            className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center gap-1"
-            aria-label="Toggle theme"
-            title={`Theme: ${theme}`}
-          >
-            {currentThemeIcon}
-            <ChevronDown className="w-3 h-3 opacity-60" />
-          </button>
+        {/* Direct 1-Click Dark / Light Mode Toggle */}
+        <ThemeToggle variant="icon" />
 
-          {showThemeMenu && (
-            <div className="absolute right-0 mt-2 w-36 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl p-1.5 z-50 animate-in">
-              <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-2 py-1">
-                Appearance
-              </p>
-              {themeOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => { setTheme(opt.value); setShowThemeMenu(false); }}
-                  className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
-                    theme === opt.value
-                      ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300"
-                      : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
-                  }`}
-                >
-                  {opt.icon} {opt.label}
-                  {theme === opt.value && (
-                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
 
         {/* Notifications */}
         <div className="relative" data-notifications-dropdown>

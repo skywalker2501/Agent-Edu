@@ -84,18 +84,13 @@ body {
 .dark .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.4) !important; }
 .dark .shadow-xl { box-shadow: 0 20px 60px rgba(0,0,0,0.6) !important; }
 
-/* Card backgrounds in dark mode */
-.dark [class*="rounded"][class*="border"] {
-  background-color: var(--card-bg);
-  border-color: var(--card-border);
-}
-
 /* Input backgrounds */
 .dark input, .dark textarea, .dark select {
   background-color: var(--input-bg);
   border-color: var(--input-border);
   color: var(--foreground);
 }
+
 
 /* ============================================================
    Animation utilities
