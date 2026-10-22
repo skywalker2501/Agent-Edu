@@ -18,6 +18,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,18 +29,20 @@ export default function RegisterPage() {
     }
     setIsLoading(true);
     try {
-      await register(formData);
-      if (formData.role === "teacher") {
-        router.push("/teacher/dashboard");
-      } else {
-        router.push("/student/dashboard");
-      }
+      await register({
+        ...formData,
+        email: formData.email.trim(),
+        full_name: formData.full_name.trim(),
+      });
+      setSuccess(true);
+      const dest = formData.role === "teacher" ? "/teacher/dashboard" : "/student/dashboard";
+      window.location.href = dest;
     } catch (err: any) {
       setError(err?.message || "Registration failed. Please try a different email address.");
-    } finally {
       setIsLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
