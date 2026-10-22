@@ -245,16 +245,16 @@ export default function LeaderboardPage() {
               2
             </div>
             <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-slate-400 flex items-center justify-center font-bold text-slate-700 dark:text-slate-200 text-sm shadow-xs mb-2">
-              {top3[1]?.display_name.charAt(0)}
+              {(top3[1]?.display_name || "S").charAt(0)}
             </div>
             <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate max-w-full">
-              {top3[1]?.display_name}
+              {top3[1]?.display_name || "Student"}
             </span>
             <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
-              {top3[1]?.total_xp.toLocaleString()} XP
+              {(top3[1]?.total_xp ?? 0).toLocaleString()} XP
             </span>
             <Badge variant="developing" className="mt-1.5 text-[9px] font-bold">
-              Level {top3[1]?.level}
+              Level {top3[1]?.level || 1}
             </Badge>
           </div>
 
@@ -267,16 +267,16 @@ export default function LeaderboardPage() {
               1
             </div>
             <div className="w-14 h-14 rounded-full bg-amber-400 dark:bg-amber-500 border-2 border-amber-200 flex items-center justify-center font-extrabold text-amber-950 text-lg shadow-md mb-2">
-              {top3[0]?.display_name.charAt(0)}
+              {(top3[0]?.display_name || "S").charAt(0)}
             </div>
             <span className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate max-w-full">
-              {top3[0]?.display_name}
+              {top3[0]?.display_name || "Student"}
             </span>
             <span className="text-xs sm:text-sm font-black text-amber-600 dark:text-amber-400 mt-0.5">
-              {top3[0]?.total_xp.toLocaleString()} XP
+              {(top3[0]?.total_xp ?? 0).toLocaleString()} XP
             </span>
             <Badge variant="hypothesis" className="mt-1.5 text-[10px] bg-amber-500 text-slate-950 font-extrabold border-none">
-              Level {top3[0]?.level} Grandmaster
+              Level {top3[0]?.level || 1} Grandmaster
             </Badge>
           </div>
 
@@ -286,16 +286,16 @@ export default function LeaderboardPage() {
               3
             </div>
             <div className="w-12 h-12 rounded-full bg-amber-200 dark:bg-amber-900/60 border-2 border-amber-400 flex items-center justify-center font-bold text-amber-900 dark:text-amber-200 text-sm shadow-xs mb-2">
-              {top3[2]?.display_name.charAt(0)}
+              {(top3[2]?.display_name || "S").charAt(0)}
             </div>
             <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-slate-100 truncate max-w-full">
-              {top3[2]?.display_name}
+              {top3[2]?.display_name || "Student"}
             </span>
             <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
-              {top3[2]?.total_xp.toLocaleString()} XP
+              {(top3[2]?.total_xp ?? 0).toLocaleString()} XP
             </span>
             <Badge variant="developing" className="mt-1.5 text-[9px] font-bold">
-              Level {top3[2]?.level}
+              Level {top3[2]?.level || 1}
             </Badge>
           </div>
         </div>
@@ -357,11 +357,11 @@ export default function LeaderboardPage() {
                     <td className="p-3.5">
                       <div className="flex items-center gap-2.5">
                         <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-cyan-300 font-bold flex items-center justify-center text-[11px] shrink-0">
-                          {user.display_name.charAt(0)}
+                          {(user.display_name || "S").charAt(0)}
                         </div>
                         <div className="min-w-0">
                           <span className="text-slate-900 dark:text-slate-100 font-medium truncate">
-                            {user.display_name}
+                            {user.display_name || "Student"}
                           </span>
                           {isMe && (
                             <Badge variant="hypothesis" className="ml-1.5 text-[9px] py-0 px-1 bg-indigo-600 text-white font-bold">
@@ -374,7 +374,7 @@ export default function LeaderboardPage() {
 
                     <td className="p-3.5">
                       <Badge variant="developing" className="text-[10px] py-0.5 font-bold">
-                        Lvl {user.level}
+                        Lvl {user.level || 1}
                       </Badge>
                     </td>
 
@@ -386,7 +386,7 @@ export default function LeaderboardPage() {
                     </td>
 
                     <td className="p-3.5 pr-5 text-right font-black text-indigo-600 dark:text-cyan-400">
-                      {user.total_xp.toLocaleString()} XP
+                      {(user.total_xp ?? 0).toLocaleString()} XP
                     </td>
                   </tr>
                 );

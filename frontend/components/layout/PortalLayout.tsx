@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
@@ -21,20 +21,54 @@ export function PortalLayout({ children, allowedRoles }: PortalLayoutProps) {
 
   const rolesKey = allowedRoles?.join(",") || "";
 
-  // Auto-login fallback
+  const [isSwitching, setIsSwitching] = useState(false);
+
+  // Auto-login fallback if user state is empty
   useEffect(() => {
     if (!isLoading && !user) {
       let targetRole: "student_rahul" | "student_priya" | "teacher" | "admin" = "student_rahul";
-      if (allowedRoles?.includes("teacher")) {
-        targetRole = "teacher";
-      } else if (allowedRoles?.includes("admin")) {
+      if (allowedRoles?.includes("admin")) {
         targetRole = "admin";
+      } else if (allowedRoles?.includes("teacher")) {
+        targetRole = "teacher";
       }
       loginAsDemo(targetRole).catch(() => {
         window.location.href = "/auth/login";
       });
     }
   }, [user, isLoading, rolesKey]);
+
+  // Auto-switch demo persona seamlessly when navigating to portal with specific role requirement
+  useEffect(() => {
+    if (isLoading || !user || !allowedRoles) return;
+    const hasRole = allowedRoles.includes(user.role) || user.role === "admin";
+    if (!hasRole) {
+      const isDemoUser =
+        user.email?.includes("agentedu.org") ||
+        user.email?.includes("demo") ||
+        user.id?.startsWith("demo-");
+
+      if (isDemoUser) {
+        let targetDemo: "student_rahul" | "teacher" | "admin" = "student_rahul";
+        if (allowedRoles.includes("admin")) {
+          targetDemo = "admin";
+        } else if (allowedRoles.includes("teacher")) {
+          targetDemo = "teacher";
+        }
+        setIsSwitching(true);
+        loginAsDemo(targetDemo)
+          .then(() => {
+            router.refresh();
+          })
+          .catch((err) => {
+            console.warn("Auto-switch demo persona notice:", err);
+          })
+          .finally(() => {
+            setIsSwitching(false);
+          });
+      }
+    }
+  }, [user, isLoading, rolesKey, pathname]);
 
   // Real-time student activity heartbeat to teacher radar
   useEffect(() => {
@@ -65,19 +99,34 @@ export function PortalLayout({ children, allowedRoles }: PortalLayoutProps) {
     return () => clearInterval(interval);
   }, [user, pathname]);
 
-  if (isLoading || !user) {
+  if (isLoading || !user || isSwitching) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-sm">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-[3px] border-indigo-600 border-t-transparent rounded-full animate-spin" />
-          <p className="font-semibold">Loading AgentEdu portal…</p>
+          <p className="font-semibold">{isSwitching ? "Switching workspace role…" : "Loading AgentEdu portal…"}</p>
         </div>
       </div>
     );
   }
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
+  // Admins have universal oversight across student, teacher, and admin portals
+  const hasAccess = !allowedRoles || allowedRoles.includes(user.role) || user.role === "admin";
+
+  if (!hasAccess) {
     const requiredRole = allowedRoles[0];
+    const handleSwitch = async (targetRole: "student_rahul" | "teacher" | "admin") => {
+      setIsSwitching(true);
+      try {
+        await loginAsDemo(targetRole);
+        router.refresh();
+      } catch {
+        window.location.reload();
+      } finally {
+        setIsSwitching(false);
+      }
+    };
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-6">
         <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm max-w-md text-center space-y-4">
@@ -95,7 +144,7 @@ export function PortalLayout({ children, allowedRoles }: PortalLayoutProps) {
             {requiredRole === "teacher" && (
               <button
                 type="button"
-                onClick={async () => { await loginAsDemo("teacher"); window.location.reload(); }}
+                onClick={() => handleSwitch("teacher")}
                 className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition cursor-pointer shadow-sm"
               >
                 Switch to Teacher Demo (Prof. Alan Turing)
@@ -104,7 +153,7 @@ export function PortalLayout({ children, allowedRoles }: PortalLayoutProps) {
             {requiredRole === "student" && (
               <button
                 type="button"
-                onClick={async () => { await loginAsDemo("student_rahul"); window.location.reload(); }}
+                onClick={() => handleSwitch("student_rahul")}
                 className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition cursor-pointer shadow-sm"
               >
                 Switch to Student Demo (Rahul Gupta)
@@ -113,7 +162,7 @@ export function PortalLayout({ children, allowedRoles }: PortalLayoutProps) {
             {requiredRole === "admin" && (
               <button
                 type="button"
-                onClick={async () => { await loginAsDemo("admin"); window.location.reload(); }}
+                onClick={() => handleSwitch("admin")}
                 className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition cursor-pointer shadow-sm"
               >
                 Switch to Admin Demo (Dr. Eleanor Vance)

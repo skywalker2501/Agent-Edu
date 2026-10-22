@@ -157,9 +157,12 @@ export default function AdminUsersPage() {
   };
 
   const filtered = users.filter((u) => {
+    const fullName = String(u?.full_name || "");
+    const email = String(u?.email || "");
+    const query = (search || "").toLowerCase();
     const matchSearch =
-      u.full_name.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase());
+      fullName.toLowerCase().includes(query) ||
+      email.toLowerCase().includes(query);
     const matchRole = roleFilter === "all" || u.role === roleFilter;
     const currentStatus = u.status || "active";
     const matchStatus = statusFilter === "all" || currentStatus === statusFilter;
@@ -171,10 +174,10 @@ export default function AdminUsersPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Shield className="w-6 h-6 text-indigo-600" /> Administrative Security & User Directory
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+            <Shield className="w-6 h-6 text-indigo-600 dark:text-indigo-400" /> Administrative Security & User Directory
           </h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
             Role-based authorization, account suspension, soft deletion, and security audit log.
           </p>
         </div>
@@ -183,7 +186,7 @@ export default function AdminUsersPage() {
           variant="outline"
           size="sm"
           onClick={loadData}
-          className="text-xs gap-1.5 self-start sm:self-auto border-slate-200"
+          className="text-xs gap-1.5 self-start sm:self-auto border-slate-200 dark:border-slate-700 dark:text-slate-200"
         >
           <RefreshCw className="w-3.5 h-3.5" /> Refresh Data
         </Button>
@@ -193,14 +196,14 @@ export default function AdminUsersPage() {
         <div
           className={`p-3.5 rounded-xl text-xs font-semibold flex items-center justify-between ${
             feedbackMsg.type === "success"
-              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-              : "bg-red-50 text-red-800 border border-red-200"
+              ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+              : "bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800"
           }`}
         >
           <span>{feedbackMsg.text}</span>
           <button
             onClick={() => setFeedbackMsg(null)}
-            className="text-xs font-bold px-2 py-0.5 rounded hover:bg-black/5"
+            className="text-xs font-bold px-2 py-0.5 rounded hover:bg-black/5 dark:hover:bg-white/10"
           >
             ×
           </button>
@@ -216,7 +219,7 @@ export default function AdminUsersPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name or email..."
-            className="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+            className="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
           />
         </div>
 
@@ -225,7 +228,7 @@ export default function AdminUsersPage() {
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-slate-700 focus:ring-2 focus:ring-indigo-500"
+            className="text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-2 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500"
           >
             <option value="all">All Roles</option>
             <option value="student">Students</option>
@@ -237,7 +240,7 @@ export default function AdminUsersPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-slate-700 focus:ring-2 focus:ring-indigo-500"
+            className="text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-2 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500"
           >
             <option value="all">All Statuses</option>
             <option value="active">Active</option>
@@ -248,11 +251,11 @@ export default function AdminUsersPage() {
       </div>
 
       {/* User Directory Table */}
-      <Card className="border-slate-200 shadow-xs">
+      <Card className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
         <CardContent className="p-0">
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-left text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
+              <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-left text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
                 <th className="p-3 pl-4">User</th>
                 <th className="p-3">Role</th>
                 <th className="p-3">Status</th>
@@ -260,17 +263,17 @@ export default function AdminUsersPage() {
                 <th className="p-3 pr-4 text-right">Security Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {filtered.map((u) => {
                 const userStatus = u.status || "active";
                 return (
-                  <tr key={u.id} className="hover:bg-slate-50/70 transition">
+                  <tr key={u.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
                     <td className="p-3 pl-4">
                       <div>
-                        <span className="font-semibold text-slate-900 block">{u.full_name}</span>
-                        <span className="text-[11px] text-slate-500 font-mono">{u.email}</span>
+                        <span className="font-semibold text-slate-900 dark:text-slate-100 block">{u.full_name || "User"}</span>
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">{u.email}</span>
                         {u.suspended_reason && (
-                          <span className="text-[10px] text-red-600 block mt-0.5">
+                          <span className="text-[10px] text-red-600 dark:text-red-400 block mt-0.5">
                             Reason: {u.suspended_reason}
                           </span>
                         )}
@@ -290,10 +293,10 @@ export default function AdminUsersPage() {
                       <span
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
                           userStatus === "active"
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
                             : userStatus === "suspended"
-                            ? "bg-red-50 text-red-700 border border-red-200"
-                            : "bg-purple-50 text-purple-700 border border-purple-200"
+                            ? "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800"
+                            : "bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
                         }`}
                       >
                         <span
@@ -305,8 +308,8 @@ export default function AdminUsersPage() {
                       </span>
                     </td>
 
-                    <td className="p-3 text-slate-400 font-mono text-[11px]">
-                      {u.created_at?.slice(0, 10) || "2026-01-01"}
+                    <td className="p-3 text-slate-400 dark:text-slate-500 font-mono text-[11px]">
+                      {String(u.created_at || "2026-01-01").slice(0, 10)}
                     </td>
 
                     <td className="p-3 pr-4 text-right">
