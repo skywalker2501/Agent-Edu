@@ -1,3 +1,6 @@
+import uuid
+import random
+import string
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -6,6 +9,10 @@ from app.core.security import get_password_hash, verify_password, create_access_
 from app.core.exceptions import AgentEduException, AuthenticationError
 from app.models.user import User, UserRole
 from app.models.audit import AuditEvent
+from app.models.classroom import Class, ClassMembership
+from app.models.curriculum import Topic
+from app.models.learner import LearnerState, Misconception, MisconceptionStatus, MasteryStatus
+from app.models.gamification import UserStreak
 from app.schemas.user import UserCreate, UserLogin, UserResponse, TokenResponse
 from app.api.deps import get_current_user
 
@@ -38,6 +45,64 @@ async def register_user(payload: UserCreate, db: AsyncSession = Depends(get_db))
     db.add(new_user)
     await db.flush()
 
+    if role == UserRole.STUDENT:
+        # 1. Auto-enroll in default active classes
+        classes_res = await db.execute(select(Class))
+        active_classes = classes_res.scalars().all()
+        for cl in active_classes:
+            membership = ClassMembership(
+                class_id=cl.id,
+                student_id=new_user.id,
+                status="active"
+            )
+            db.add(membership)
+
+        # 2. Seed LearnerState for curriculum topics
+        topics_res = await db.execute(select(Topic))
+        all_topics = topics_res.scalars().all()
+        for idx, t in enumerate(all_topics):
+            base_score = 85.0 if idx == 0 else (80.0 if idx == 1 else (58.0 if idx == 2 else 46.0))
+            db.add(LearnerState(
+                student_id=new_user.id,
+                topic_id=t.id,
+                mastery_score=base_score,
+                confidence=0.72,
+                status="Mastered" if base_score >= 80 else ("Developing" if base_score >= 60 else "Needs Attention"),
+                assessment_count=1
+            ))
+
+        # 3. Seed baseline diagnostic misconception
+        rec_topic = next((t for t in all_topics if t.code == "recursion"), (all_topics[0] if all_topics else None))
+        if rec_topic:
+            db.add(Misconception(
+                student_id=new_user.id,
+                topic_id=rec_topic.id,
+                concept="Recursion & Base Cases",
+                root_cause="Stack-Frame Unwinding Misunderstood",
+                description="Student anticipates recursive return without unwinding the call stack or multiplying accumulated values across stack frames.",
+                status=MisconceptionStatus.TEACHER_CONFIRMED,
+                confidence=0.88,
+                evidence_summary="Baseline diagnostic: Predicted return 1 for factorial(3) instead of multiplying across stack unwinding."
+            ))
+
+        # 4. Initialize gamification streak
+        db.add(UserStreak(
+            user_id=new_user.id,
+            current_streak=1,
+            longest_streak=1
+        ))
+
+    elif role == UserRole.TEACHER:
+        # Create a starter class for new teachers
+        suffix = "".join(random.choices(string.ascii_uppercase + string.digits, k=4))
+        starter_class = Class(
+            name=f"{new_user.full_name}'s CS Classroom",
+            code=f"CS101-{suffix}",
+            description="Foundations of Computer Science & Algorithmic Problem Solving",
+            teacher_id=new_user.id
+        )
+        db.add(starter_class)
+
     # Log audit event
     audit = AuditEvent(
         actor_id=new_user.id,
@@ -58,6 +123,7 @@ async def register_user(payload: UserCreate, db: AsyncSession = Depends(get_db))
         token_type="bearer",
         user=UserResponse.model_validate(new_user)
     )
+
 
 
 @router.post("/login", response_model=TokenResponse)
