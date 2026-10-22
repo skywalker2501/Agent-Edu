@@ -29,6 +29,68 @@ import {
   Timer
 } from "lucide-react";
 
+// Safe Option Extractors to prevent React Object-as-Child rendering crashes
+const getOptionKey = (opt: any, fallbackIdx: number): string => {
+  if (typeof opt === "object" && opt !== null) {
+    return String(opt.id || opt.key || opt.value || opt.text || fallbackIdx);
+  }
+  return String(opt ?? fallbackIdx);
+};
+
+const getOptionLabel = (opt: any): string => {
+  if (typeof opt === "object" && opt !== null) {
+    if (opt.text && opt.id && String(opt.id).length <= 2) {
+      return `${opt.id}) ${opt.text}`;
+    }
+    return String(opt.text || opt.title || opt.label || opt.value || opt.id || "");
+  }
+  return String(opt ?? "");
+};
+
+const getOptionValue = (opt: any): string => {
+  if (typeof opt === "object" && opt !== null) {
+    return String(opt.id || opt.text || opt.value || "");
+  }
+  return String(opt ?? "");
+};
+
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: string | null;
+}
+class GameErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error: error?.message || "Render error occurred." };
+  }
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error("GameErrorBoundary caught:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <Card className="p-8 text-center border-amber-200 dark:border-amber-800 bg-amber-50/40 dark:bg-amber-950/20">
+          <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
+          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-1">Game Interface Recovered</h3>
+          <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto mb-4">
+            A temporary display error occurred while loading this activity. Click below to refresh the round safely.
+          </p>
+          <Button onClick={() => this.setState({ hasError: false, error: null })} className="bg-indigo-600 hover:bg-indigo-700 text-xs font-bold">
+            <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Reload Game
+          </Button>
+        </Card>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function LearnAndPlayPage() {
   const [activeTab, setActiveTab] = useState<
     "quiz" | "puzzle" | "quickfire" | "code" | "match" | "flashcards" | "adaptive"
@@ -479,6 +541,7 @@ export default function LearnAndPlayPage() {
         })}
       </div>
 
+      <GameErrorBoundary>
       {/* ============================================================= */}
       {/* GAME A: QUIZ BATTLE */}
       {/* ============================================================= */}
@@ -523,19 +586,22 @@ export default function LearnAndPlayPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {q.options.map((opt: string, optIdx: number) => {
-                          const isSelected = quizAnswers[q.id] === opt;
+                        {(Array.isArray(q.options) ? q.options : ["True", "False"]).map((opt: any, optIdx: number) => {
+                          const optVal = getOptionValue(opt);
+                          const optKey = getOptionKey(opt, optIdx);
+                          const optLabel = getOptionLabel(opt);
+                          const isSelected = quizAnswers[q.id] === optVal || quizAnswers[q.id] === optKey;
                           return (
                             <button
                               key={optIdx}
-                              onClick={() => handleSelectQuizAnswer(q.id, opt)}
+                              onClick={() => handleSelectQuizAnswer(q.id, optVal)}
                               className={`p-3 rounded-lg text-left text-sm font-medium border transition-all cursor-pointer ${
                                 isSelected
                                   ? "bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500 text-indigo-900 dark:text-indigo-200 font-bold ring-2 ring-indigo-500/20"
                                   : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
                               }`}
                             >
-                              {opt}
+                              {optLabel}
                             </button>
                           );
                         })}
@@ -628,7 +694,7 @@ export default function LearnAndPlayPage() {
                 <>
                   {/* Scrambled Letter Tiles */}
                   <div className="py-6 px-4 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-center gap-2">
-                    {currentPuzzle.scrambled.split("").map((letter: string, idx: number) => (
+                    {(currentPuzzle.scrambled || currentPuzzle.answer || "").split("").map((letter: string, idx: number) => (
                       <div
                         key={idx}
                         className="w-11 h-12 rounded-xl bg-white dark:bg-slate-800 border-2 border-indigo-200 dark:border-indigo-700 shadow-sm flex items-center justify-center text-xl font-extrabold text-indigo-900 dark:text-indigo-200 select-none animate-in zoom-in-50"
@@ -641,7 +707,7 @@ export default function LearnAndPlayPage() {
                   {/* Hint Section */}
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-500 dark:text-slate-400">
-                      Word Length: <strong>{currentPuzzle.length} letters</strong>
+                      Word Length: <strong>{currentPuzzle.length || currentPuzzle.answer?.length || currentPuzzle.scrambled?.length || 0} letters</strong>
                     </span>
                     {!showPuzzleHint ? (
                       <button
@@ -763,11 +829,16 @@ export default function LearnAndPlayPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {quickfireQuestions[quickfireCurrentIdx].options.map((opt: string, idx: number) => {
-                    const isSelected = quickfireSelectedOpt === opt;
-                    const isAnswer = opt === quickfireQuestions[quickfireCurrentIdx].answer;
+                  {(Array.isArray(quickfireQuestions[quickfireCurrentIdx]?.options)
+                    ? quickfireQuestions[quickfireCurrentIdx].options
+                    : []
+                  ).map((opt: any, idx: number) => {
+                    const optVal = getOptionValue(opt);
+                    const optLabel = getOptionLabel(opt);
+                    const isSelected = quickfireSelectedOpt === optVal;
+                    const isAnswer = optVal === quickfireQuestions[quickfireCurrentIdx]?.answer;
 
-                    let btnStyle = "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-50";
+                    let btnStyle = "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700";
                     if (quickfireSelectedOpt) {
                       if (isAnswer) {
                         btnStyle = "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500 text-emerald-900 dark:text-emerald-200 font-bold";
@@ -779,11 +850,11 @@ export default function LearnAndPlayPage() {
                     return (
                       <button
                         key={idx}
-                        onClick={() => handleSelectQuickfireOption(opt)}
+                        onClick={() => handleSelectQuickfireOption(optVal)}
                         disabled={!!quickfireSelectedOpt}
                         className={`p-4 rounded-xl border text-left font-bold text-sm transition-all cursor-pointer ${btnStyle}`}
                       >
-                        {opt}
+                        {optLabel}
                       </button>
                     );
                   })}
@@ -997,7 +1068,7 @@ export default function LearnAndPlayPage() {
                 <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                   Terms & Concepts
                 </h3>
-                {matchData.terms.map((t: any) => {
+                {(matchData?.terms || []).map((t: any) => {
                   const isMatched = matchedPairs.some((p) => p.term_id === t.id);
                   const isSelected = selectedTerm === t.id;
                   return (
@@ -1023,7 +1094,7 @@ export default function LearnAndPlayPage() {
                 <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                   Definitions & Invariants
                 </h3>
-                {matchData.definitions.map((d: any) => {
+                {(matchData?.definitions || []).map((d: any) => {
                   const isMatched = matchedPairs.some((p) => p.def_id === d.id);
                   const isSelected = selectedDef === d.id;
                   return (
@@ -1152,68 +1223,89 @@ export default function LearnAndPlayPage() {
       {/* ============================================================= */}
       {/* GAME G: ADAPTIVE CHALLENGE */}
       {/* ============================================================= */}
-      {activeTab === "adaptive" && adaptiveData && (
+      {activeTab === "adaptive" && (
         <div className="max-w-2xl mx-auto space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between mb-2">
-                <Badge variant="outline" className="capitalize text-xs font-bold text-indigo-700">
-                  {adaptiveData.difficulty_selected} Challenge
-                </Badge>
-                <span className="text-xs text-slate-500">
-                  Topic Mastery: {Math.round(adaptiveData.current_mastery_score * 100)}%
-                </span>
-              </div>
-              <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
-                {adaptiveData.question.title}
-              </CardTitle>
-              <CardDescription className="text-xs text-slate-600 dark:text-slate-400">
-                {adaptiveData.pedagogical_reason}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                {adaptiveData.question.prompt}
-              </p>
-
-              <div className="space-y-2">
-                {adaptiveData.question.options.map((opt: string, idx: number) => (
-                  <button
-                    key={idx}
-                    onClick={() => setAdaptiveSelectedOption(opt)}
-                    className={`w-full text-left p-3 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
-                      adaptiveSelectedOption === opt
-                        ? "bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500 text-indigo-900 dark:text-indigo-200 font-bold ring-2 ring-indigo-500/20"
-                        : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50"
-                    }`}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-
-              {adaptiveFeedback && (
-                <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 text-xs text-emerald-900 dark:text-emerald-200">
-                  {adaptiveFeedback}
+          {adaptiveData ? (
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <Badge variant="outline" className="capitalize text-xs font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-800">
+                    {adaptiveData.difficulty_selected} Challenge
+                  </Badge>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    Topic Mastery: {Math.round((adaptiveData.current_mastery_score || 0.5) * 100)}%
+                  </span>
                 </div>
-              )}
+                <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  {adaptiveData.question?.title || "Concept Mastery Assessment"}
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-600 dark:text-slate-400">
+                  {adaptiveData.pedagogical_reason}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  {adaptiveData.question?.prompt}
+                </p>
 
-              <div className="flex justify-end gap-2 pt-2">
-                <Button
-                  onClick={handleAdaptiveSubmit}
-                  disabled={!adaptiveSelectedOption}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-xs font-bold"
-                >
-                  Record Answer (+20 XP)
-                </Button>
-                <Button onClick={loadAdaptiveChallenge} variant="outline" className="text-xs font-semibold">
-                  Next Adaptive Item
-                </Button>
+                <div className="space-y-2">
+                  {(Array.isArray(adaptiveData.question?.options) ? adaptiveData.question.options : []).map((opt: any, idx: number) => {
+                    const optVal = getOptionValue(opt);
+                    const optLabel = getOptionLabel(opt);
+                    const isSelected = adaptiveSelectedOption === optVal;
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => setAdaptiveSelectedOption(optVal)}
+                        className={`w-full text-left p-3 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500 text-indigo-900 dark:text-indigo-200 font-bold ring-2 ring-indigo-500/20"
+                            : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+                        }`}
+                      >
+                        {optLabel}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {adaptiveFeedback && (
+                  <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-900 dark:text-emerald-200">
+                    {adaptiveFeedback}
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    onClick={handleAdaptiveSubmit}
+                    disabled={!adaptiveSelectedOption}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-xs font-bold"
+                  >
+                    Record Answer (+20 XP)
+                  </Button>
+                  <Button onClick={loadAdaptiveChallenge} variant="outline" className="text-xs font-semibold">
+                    Next Adaptive Item
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="text-center py-12 px-4 border-dashed border-2">
+              <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 mx-auto flex items-center justify-center mb-4">
+                <Award className="w-8 h-8" />
               </div>
-            </CardContent>
-          </Card>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">Loading Adaptive Challenge</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto mb-4">
+                Analyzing your misconception profile and topic mastery to select the ideal difficulty level.
+              </p>
+              <Button onClick={loadAdaptiveChallenge} className="bg-indigo-600 hover:bg-indigo-700 font-bold text-xs">
+                Fetch Challenge
+              </Button>
+            </Card>
+          )}
         </div>
       )}
+      </GameErrorBoundary>
     </div>
   );
 }

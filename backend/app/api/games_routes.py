@@ -271,7 +271,24 @@ async def submit_quiz_battle(
         q_stmt = select(Question).where(Question.id == q_id)
         q = (await db.execute(q_stmt)).scalar_one_or_none()
         if q:
-            is_correct = (str(user_ans).strip().lower() == str(q.reference_answer).strip().lower())
+            is_correct = False
+            ref_str = str(q.reference_answer or "").strip().lower()
+            ans_str = str(user_ans or "").strip().lower()
+            if ref_str and ans_str and ref_str == ans_str:
+                is_correct = True
+            elif isinstance(q.options, list):
+                for opt in q.options:
+                    if isinstance(opt, dict):
+                        opt_id = str(opt.get("id", "")).strip().lower()
+                        opt_txt = str(opt.get("text", "")).strip().lower()
+                        if (
+                            (ans_str == opt_id and ref_str == opt_id) or
+                            (ans_str == opt_txt and ref_str == opt_txt) or
+                            (ans_str == opt_id and ref_str == opt_txt) or
+                            (ans_str == opt_txt and ref_str == opt_id)
+                        ):
+                            is_correct = True
+                            break
             if is_correct:
                 correct_count += 1
             breakdown.append({
