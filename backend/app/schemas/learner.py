@@ -33,6 +33,7 @@ class MisconceptionResponse(BaseModel):
     student_id: str
     topic_id: str
     topic_name: Optional[str] = None
+    title: Optional[str] = None
     concept: str
     root_cause: str
     description: str

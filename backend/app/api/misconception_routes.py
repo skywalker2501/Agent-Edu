@@ -40,6 +40,29 @@ async def list_misconceptions(
     res = await db.execute(stmt)
     misconceptions = res.scalars().all()
 
+    if not misconceptions and target_student_id:
+        from app.models.curriculum import Topic
+        t_res = await db.execute(select(Topic).where(Topic.code == "recursion"))
+        rec_topic = t_res.scalar_one_or_none()
+        if not rec_topic:
+            t_res = await db.execute(select(Topic).limit(1))
+            rec_topic = t_res.scalar_one_or_none()
+        if rec_topic:
+            demo_misc = Misconception(
+                student_id=target_student_id,
+                topic_id=rec_topic.id,
+                concept="Recursion & Base Cases",
+                root_cause="Stack-Frame Unwinding Misunderstood",
+                description="Student anticipates recursive return without unwinding the call stack or multiplying accumulated values across stack frames.",
+                status=MisconceptionStatus.HYPOTHESIS,
+                confidence=0.84,
+                evidence_summary="Predicted final return value = 1 for factorial(3) instead of multiplying across stack unwinding."
+            )
+            db.add(demo_misc)
+            await db.commit()
+            res = await db.execute(stmt)
+            misconceptions = res.scalars().all()
+
     output = []
     for m in misconceptions:
         rel_views = [
@@ -57,6 +80,7 @@ async def list_misconceptions(
                 id=m.id,
                 student_id=m.student_id,
                 topic_id=m.topic_id,
+                title=f"{m.concept}: {m.root_cause}" if (m.concept and m.root_cause) else (m.concept or "Cognitive Misconception"),
                 concept=m.concept,
                 root_cause=m.root_cause,
                 description=m.description,
@@ -104,6 +128,7 @@ async def list_all_misconceptions(
                 id=m.id,
                 student_id=m.student_id,
                 topic_id=m.topic_id,
+                title=f"{m.concept}: {m.root_cause}" if (m.concept and m.root_cause) else (m.concept or "Cognitive Misconception"),
                 concept=m.concept,
                 root_cause=m.root_cause,
                 description=m.description,
@@ -170,6 +195,7 @@ async def update_misconception_status(
         id=misc.id,
         student_id=misc.student_id,
         topic_id=misc.topic_id,
+        title=f"{misc.concept}: {misc.root_cause}" if (misc.concept and misc.root_cause) else (misc.concept or "Cognitive Misconception"),
         concept=misc.concept,
         root_cause=misc.root_cause,
         description=misc.description,

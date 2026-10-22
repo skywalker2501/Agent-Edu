@@ -32,6 +32,8 @@ from app.models.games import (
     GameType, GameStatus, GameSession, Flashcard,
     UserFlashcardReview, CodeChallenge
 )
+from app.models.live_class import LiveClassSession, LiveClassMessage
+
 
 __all__ = [
     "Base",
@@ -91,4 +93,6 @@ __all__ = [
     "Flashcard",
     "UserFlashcardReview",
     "CodeChallenge",
+    "LiveClassSession",
+    "LiveClassMessage",
 ]

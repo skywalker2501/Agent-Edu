@@ -60,6 +60,28 @@ class AssessmentCreate(AssessmentBase):
     question_links: Optional[List[AssessmentQuestionCreate]] = None
 
 
+class InlineQuestionCreate(BaseModel):
+    title: str
+    prompt: str
+    options: List[Dict[str, Any]]
+    correct_answer: str
+    points: float = 10.0
+    explanation: Optional[str] = None
+    difficulty: str = "intermediate"
+
+
+class TeacherCustomAssessmentCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    class_id: str
+    topic_id: Optional[str] = None
+    assessment_type: str = "quiz"
+    time_limit_minutes: int = 30
+    passing_score: float = 60.0
+    questions: List[InlineQuestionCreate]
+
+
+
 class AssessmentStudentView(AssessmentBase):
     id: str
     created_at: datetime

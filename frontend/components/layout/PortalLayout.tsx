@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import { api } from "@/lib/api";
 import { Sidebar } from "./Sidebar";
 import { TopNav } from "./TopNav";
+import { SimulationPanel } from "@/components/SimulationPanel";
 import { UserRole } from "@/lib/types";
 
 interface PortalLayoutProps {
@@ -15,12 +17,13 @@ interface PortalLayoutProps {
 export function PortalLayout({ children, allowedRoles }: PortalLayoutProps) {
   const { user, isLoading, loginAsDemo } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   const rolesKey = allowedRoles?.join(",") || "";
 
+  // Auto-login fallback
   useEffect(() => {
     if (!isLoading && !user) {
-      // Determine appropriate demo role based on required portal roles
       let targetRole: "student_rahul" | "student_priya" | "teacher" | "admin" = "student_rahul";
       if (allowedRoles?.includes("teacher")) {
         targetRole = "teacher";
@@ -33,12 +36,41 @@ export function PortalLayout({ children, allowedRoles }: PortalLayoutProps) {
     }
   }, [user, isLoading, rolesKey]);
 
+  // Real-time student activity heartbeat to teacher radar
+  useEffect(() => {
+    if (!user || user.role !== "student") return;
+
+    const getFriendlyActivityLabel = (path: string): string => {
+      if (path.includes("/assessments")) return "Taking / Reviewing Assessment";
+      if (path.includes("/games")) return "Playing Games & Skill Challenges";
+      if (path.includes("/classes")) return "In Classes & Sessions";
+      if (path.includes("/live-class")) return "Attending Live Online Classroom";
+      if (path.includes("/ai-tutor")) return "Studying with AI Socratic Tutor";
+      if (path.includes("/misconceptions")) return "Analyzing Cognitive Misconceptions";
+      if (path.includes("/knowledge-map")) return "Exploring Knowledge Graph";
+      if (path.includes("/syllabus")) return "Reading Syllabus & Mastery Nodes";
+      if (path.includes("/interventions")) return "Working on Remedial Practice";
+      if (path.includes("/leaderboard")) return "Checking Global Leaderboard";
+      return "Active on Dashboard";
+    };
+
+    const sendTelemetry = () => {
+      const currentPath = pathname || "/student/dashboard";
+      const activity = getFriendlyActivityLabel(currentPath);
+      api.sendHeartbeat(currentPath, activity).catch(() => {});
+    };
+
+    sendTelemetry();
+    const interval = setInterval(sendTelemetry, 15000); // Heartbeat every 15s
+    return () => clearInterval(interval);
+  }, [user, pathname]);
+
   if (isLoading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 text-sm">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-sm">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-          <p className="font-medium">Loading AgentEdu portal...</p>
+          <div className="w-10 h-10 border-[3px] border-indigo-600 border-t-transparent rounded-full animate-spin" />
+          <p className="font-semibold">Loading AgentEdu portal…</p>
         </div>
       </div>
     );
@@ -47,25 +79,23 @@ export function PortalLayout({ children, allowedRoles }: PortalLayoutProps) {
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     const requiredRole = allowedRoles[0];
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
-        <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm max-w-md text-center space-y-4">
-          <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto text-xl font-bold">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-6">
+        <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm max-w-md text-center space-y-4">
+          <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto text-xl font-bold">
             🛡️
           </div>
-          <h2 className="text-lg font-bold text-slate-900">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
             {requiredRole === "teacher" ? "Teacher Workspace" : requiredRole === "admin" ? "Admin Console" : "Student Portal"}
           </h2>
-          <p className="text-xs text-slate-600 leading-relaxed">
-            You are currently signed in as <span className="font-bold capitalize text-slate-900">{user.full_name}</span> ({user.role}). This section requires a <span className="font-bold capitalize text-indigo-600">{requiredRole}</span> role.
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+            You are signed in as <span className="font-bold capitalize text-slate-900 dark:text-slate-100">{user.full_name}</span> ({user.role}). This section requires a{" "}
+            <span className="font-bold capitalize text-indigo-600 dark:text-indigo-400">{requiredRole}</span> role.
           </p>
           <div className="pt-2 flex flex-col gap-2">
             {requiredRole === "teacher" && (
               <button
                 type="button"
-                onClick={async () => {
-                  await loginAsDemo("teacher");
-                  window.location.reload();
-                }}
+                onClick={async () => { await loginAsDemo("teacher"); window.location.reload(); }}
                 className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition cursor-pointer shadow-sm"
               >
                 Switch to Teacher Demo (Prof. Alan Turing)
@@ -74,10 +104,7 @@ export function PortalLayout({ children, allowedRoles }: PortalLayoutProps) {
             {requiredRole === "student" && (
               <button
                 type="button"
-                onClick={async () => {
-                  await loginAsDemo("student_rahul");
-                  window.location.reload();
-                }}
+                onClick={async () => { await loginAsDemo("student_rahul"); window.location.reload(); }}
                 className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition cursor-pointer shadow-sm"
               >
                 Switch to Student Demo (Rahul Gupta)
@@ -86,10 +113,7 @@ export function PortalLayout({ children, allowedRoles }: PortalLayoutProps) {
             {requiredRole === "admin" && (
               <button
                 type="button"
-                onClick={async () => {
-                  await loginAsDemo("admin");
-                  window.location.reload();
-                }}
+                onClick={async () => { await loginAsDemo("admin"); window.location.reload(); }}
                 className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition cursor-pointer shadow-sm"
               >
                 Switch to Admin Demo (Dr. Eleanor Vance)
@@ -98,9 +122,14 @@ export function PortalLayout({ children, allowedRoles }: PortalLayoutProps) {
             <button
               type="button"
               onClick={() => {
-                window.location.href = (user.role === "teacher" ? "/teacher/dashboard" : user.role === "admin" ? "/admin/dashboard" : "/student/dashboard");
+                window.location.href =
+                  user.role === "teacher"
+                    ? "/teacher/dashboard"
+                    : user.role === "admin"
+                    ? "/admin/dashboard"
+                    : "/student/dashboard";
               }}
-              className="w-full py-2 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium transition cursor-pointer"
+              className="w-full py-2 px-4 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-medium transition cursor-pointer"
             >
               Go to my {user.role} dashboard instead
             </button>
@@ -111,14 +140,16 @@ export function PortalLayout({ children, allowedRoles }: PortalLayoutProps) {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <TopNav />
-        <main className="p-6 md:p-8 flex-1 overflow-y-auto max-w-7xl w-full mx-auto">
+        <main className="p-5 md:p-8 flex-1 overflow-y-auto max-w-7xl w-full mx-auto">
           {children}
         </main>
       </div>
+      {/* Floating Live Simulation Panel — visible on all pages */}
+      <SimulationPanel />
     </div>
   );
 }

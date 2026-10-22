@@ -399,6 +399,25 @@ export interface StudentDashboardData {
   pending_interventions?: Intervention[];
   recent_events?: any[];
   mastery_summary?: Record<string, number>;
+  knowledge_gaps?: Array<{
+    topic_id?: string;
+    topic_name: string;
+    misconception_id?: string;
+    root_cause?: string;
+    mastery_score?: number;
+    severity: "critical" | "high" | "medium";
+    reason: string;
+  }>;
+  active_misconceptions?: Array<{
+    id: string;
+    concept: string;
+    root_cause: string;
+    title?: string;
+    description: string;
+    status: string;
+    confidence: number;
+    evidence_summary?: string;
+  }>;
 }
 
 export interface GamificationProfile {

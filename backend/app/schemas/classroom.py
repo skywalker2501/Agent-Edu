@@ -39,3 +39,22 @@ class MembershipResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ClassJoinRequest(BaseModel):
+    code: str
+
+
+class StudentAddByEmailRequest(BaseModel):
+    email: str
+
+
+class EnrolledStudentResponse(BaseModel):
+    student_id: str
+    full_name: str
+    email: str
+    enrolled_at: datetime
+    status: str
+    last_activity: Optional[str] = "Studying course materials"
+    is_online: Optional[bool] = False
+

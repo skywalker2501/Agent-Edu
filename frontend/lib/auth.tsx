@@ -16,13 +16,15 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Offline-only fallback personas — used ONLY when the backend is completely unreachable
 const FALLBACK_DEMO_USERS: Record<string, { user: User; token: string }> = {
   "rahul@agentedu.org": {
     user: {
       id: "demo-rahul-student",
       email: "rahul@agentedu.org",
-      full_name: "Rahul Sharma",
-      role: "student" as any,
+      full_name: "Rahul Gupta",
+      role: "student" as UserRole,
+      status: "active",
       created_at: new Date().toISOString(),
     },
     token: "demo-jwt-rahul-token",
@@ -32,7 +34,8 @@ const FALLBACK_DEMO_USERS: Record<string, { user: User; token: string }> = {
       id: "demo-priya-student",
       email: "priya@agentedu.org",
       full_name: "Priya Singh",
-      role: "student" as any,
+      role: "student" as UserRole,
+      status: "active",
       created_at: new Date().toISOString(),
     },
     token: "demo-jwt-priya-token",
@@ -42,7 +45,8 @@ const FALLBACK_DEMO_USERS: Record<string, { user: User; token: string }> = {
       id: "demo-alan-turing",
       email: "teacher@agentedu.org",
       full_name: "Prof. Alan Turing",
-      role: "teacher" as any,
+      role: "teacher" as UserRole,
+      status: "active",
       created_at: new Date().toISOString(),
     },
     token: "demo-jwt-teacher-token",
@@ -51,8 +55,9 @@ const FALLBACK_DEMO_USERS: Record<string, { user: User; token: string }> = {
     user: {
       id: "demo-platform-admin",
       email: "admin@agentedu.org",
-      full_name: "Platform Admin",
-      role: "admin" as any,
+      full_name: "Dr. Eleanor Vance (Admin)",
+      role: "admin" as UserRole,
+      status: "active",
       created_at: new Date().toISOString(),
     },
     token: "demo-jwt-admin-token",
@@ -71,7 +76,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (savedToken && savedUser) {
       setToken(savedToken);
       try {
-        setUser(JSON.parse(savedUser));
+        const parsedUser = JSON.parse(savedUser);
+        setUser(parsedUser);
+        // Validate that a real (non-stub) token is still valid with the backend
+        if (!savedToken.startsWith("demo-jwt-")) {
+          api.getMe()
+            .then((freshUser) => {
+              setUser(freshUser);
+              localStorage.setItem("agentedu_user", JSON.stringify(freshUser));
+            })
+            .catch(() => {
+              // Token expired — force re-login
+              localStorage.removeItem("agentedu_token");
+              localStorage.removeItem("agentedu_user");
+              setToken(null);
+              setUser(null);
+            });
+        }
       } catch {
         localStorage.removeItem("agentedu_user");
       }
@@ -82,6 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
+      // Always attempt real backend login first
       try {
         const res = await api.login({ email, password });
         setToken(res.access_token);
@@ -90,9 +112,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem("agentedu_user", JSON.stringify(res.user));
         return;
       } catch (err: any) {
+        // Only use offline fallback if network is completely unreachable (not an auth error)
+        const msg = err?.message || "";
+        const isNetworkError =
+          !msg.includes("401") &&
+          !msg.includes("403") &&
+          !msg.includes("422") &&
+          !msg.includes("400") &&
+          (err?.name === "TypeError" ||
+            msg.includes("fetch") ||
+            msg.includes("Failed to fetch") ||
+            msg.includes("unavailable") ||
+            msg.includes("NetworkError"));
+
         const cleanEmail = email.toLowerCase().trim();
-        if (FALLBACK_DEMO_USERS[cleanEmail]) {
-          console.warn("Backend live endpoint unreachable, activating demo persona session for:", cleanEmail);
+        if (isNetworkError && FALLBACK_DEMO_USERS[cleanEmail]) {
+          console.warn("[AgentEdu] Backend unreachable — offline demo mode for:", cleanEmail);
           const fallback = FALLBACK_DEMO_USERS[cleanEmail];
           setToken(fallback.token);
           setUser(fallback.user);

@@ -450,6 +450,169 @@ class ApiClient {
     const query = action ? `?action=${action}` : "";
     return this.request<any[]>(`/admin/audit${query}`);
   }
+
+  // --- Class Enrollment (Extended) ---
+  async joinClassByCode(code: string) {
+    return this.request<ClassInfo>("/classes/join", {
+      method: "POST",
+      body: JSON.stringify({ code }),
+    });
+  }
+
+  async getEnrolledStudents(classId: string) {
+    return this.request<any[]>(`/classes/${classId}/students`);
+  }
+
+  async addStudentToClass(classId: string, email: string) {
+    return this.request<any>(`/classes/${classId}/students`, {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async removeStudentFromClass(classId: string, studentId: string) {
+    return this.request<void>(`/classes/${classId}/students/${studentId}`, {
+      method: "DELETE",
+    });
+  }
+
+  async deleteClass(classId: string) {
+    return this.request<void>(`/classes/${classId}`, {
+      method: "DELETE",
+    });
+  }
+
+  // --- Custom Assessments ---
+  async createCustomAssessment(payload: {
+    title: string;
+    description?: string;
+    class_id: string;
+    topic_id?: string;
+    assessment_type: string;
+    time_limit_minutes: number;
+    passing_score: number;
+    questions: Array<{
+      title: string;
+      prompt: string;
+      options: Array<{ id: string; text: string }>;
+      correct_answer: string;
+      explanation?: string;
+      difficulty: string;
+      points: number;
+    }>;
+  }) {
+    return this.request<any>("/assessments/custom", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async getTeacherAssessments(classId?: string) {
+    const q = classId ? `?class_id=${classId}` : "";
+    return this.request<any[]>(`/assessments/teacher/all${q}`);
+  }
+
+  // --- Live Online Classroom ---
+  async startLiveClass(payload: {
+    class_id: string;
+    title: string;
+    description?: string;
+    slides?: any[];
+  }) {
+    return this.request<any>("/live-classes", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async getActiveLiveClasses() {
+    return this.request<any[]>("/live-classes/active");
+  }
+
+  async getLiveClass(sessionId: string) {
+    return this.request<any>(`/live-classes/${sessionId}`);
+  }
+
+  async syncSlide(sessionId: string, slideIndex: number) {
+    return this.request<any>(`/live-classes/${sessionId}/slide`, {
+      method: "POST",
+      body: JSON.stringify({ current_slide: slideIndex }),
+    });
+  }
+
+  async attendLiveClass(sessionId: string) {
+    return this.request<any>(`/live-classes/${sessionId}/attend`, {
+      method: "POST",
+    });
+  }
+
+  async endLiveClass(sessionId: string) {
+    return this.request<any>(`/live-classes/${sessionId}/end`, {
+      method: "POST",
+    });
+  }
+
+  async getLiveChatMessages(sessionId: string) {
+    return this.request<any[]>(`/live-classes/${sessionId}/chat`);
+  }
+
+  async postLiveChatMessage(sessionId: string, message: string, isQuestion: boolean = false) {
+    return this.request<any>(`/live-classes/${sessionId}/chat`, {
+      method: "POST",
+      body: JSON.stringify({ message, is_question: isQuestion }),
+    });
+  }
+
+  // --- Teacher Live Student Radar & Student Heartbeat ---
+  async sendHeartbeat(currentPage: string, activityLabel: string, classId?: string) {
+    return this.request<{ status: string; timestamp: string }>("/learner-model/heartbeat", {
+      method: "POST",
+      body: JSON.stringify({
+        current_page: currentPage,
+        activity_label: activityLabel,
+        class_id: classId,
+      }),
+    });
+  }
+
+  async getLiveStudentActivity(classId?: string) {
+    const q = classId ? `?class_id=${classId}` : "";
+    return this.request<any[]>(`/learner-model/live-activity${q}`);
+  }
+
+  async sendStudentGuidance(studentId: string, message: string) {
+    return this.request<any>("/learner-model/guide", {
+      method: "POST",
+      body: JSON.stringify({ student_id: studentId, message }),
+    });
+  }
+
+  // --- Puzzle & Arcade Games ---
+  async getWordPuzzles() {
+    return this.request<any[]>("/games/puzzles");
+  }
+
+  async submitWordPuzzle(puzzleId: string, solutionAttempt: string, hintsUsed: number = 0) {
+    return this.request<any>("/games/puzzles/submit", {
+      method: "POST",
+      body: JSON.stringify({
+        puzzle_id: puzzleId,
+        solution_attempt: solutionAttempt,
+        hints_used: hintsUsed,
+      }),
+    });
+  }
+
+  async submitQuickfire(score: number, correctCount: number, totalQuestions: number) {
+    return this.request<any>("/games/quickfire/submit", {
+      method: "POST",
+      body: JSON.stringify({
+        score,
+        correct_count: correctCount,
+        total_questions: totalQuestions,
+      }),
+    });
+  }
 }
 
 export const api = new ApiClient();

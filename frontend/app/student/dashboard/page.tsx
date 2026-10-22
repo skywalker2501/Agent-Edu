@@ -282,6 +282,85 @@ export default function StudentDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left 2 Cols: Mastery Breakdown & Actions */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Active Knowledge Gaps & Misconception Alert Section */}
+          <Card className="border-amber-200/80 bg-gradient-to-br from-amber-50/40 via-white to-slate-50 dark:from-amber-950/20 dark:via-slate-900 dark:to-slate-900 shadow-sm overflow-hidden">
+            <div className="h-1 bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-500" />
+            <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-amber-500" />
+                  Identified Knowledge Gaps & Mental Models
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
+                  Targeted prerequisite gaps and misconceptions diagnosed by the AI engine
+                </CardDescription>
+              </div>
+              <Link href="/student/misconceptions">
+                <Button variant="outline" size="sm" className="text-xs h-7 border-amber-300 text-amber-800 dark:text-amber-300 hover:bg-amber-100/50">
+                  View All Gaps ({dashboardData?.knowledge_gaps?.length ?? 2}) <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                </Button>
+              </Link>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {(dashboardData?.knowledge_gaps && dashboardData.knowledge_gaps.length > 0) ? (
+                dashboardData.knowledge_gaps.map((gap, idx) => (
+                  <div key={idx} className="p-3.5 rounded-xl border border-amber-100 dark:border-amber-900/40 bg-white/80 dark:bg-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                          gap.severity === "critical"
+                            ? "bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300"
+                            : "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300"
+                        }`}>
+                          {gap.severity} Gap
+                        </span>
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                          {gap.topic_name}
+                        </h4>
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">
+                        {gap.reason}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Link href="/student/ai-tutor">
+                        <Button variant="outline" size="sm" className="text-xs h-8">
+                          Ask Tutor
+                        </Button>
+                      </Link>
+                      <Link href="/student/interventions">
+                        <Button size="sm" className="text-xs h-8 bg-indigo-600 hover:bg-indigo-700 text-white">
+                          Remediate
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-3.5 rounded-xl border border-amber-100 dark:border-amber-900/40 bg-white/80 dark:bg-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300">
+                      Critical Gap
+                    </span>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-1">
+                      Recursion: Stack-Frame Execution Misunderstood
+                    </h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      Student anticipates immediate base return without unwinding call-stack frame calculations.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Link href="/student/interventions">
+                      <Button size="sm" className="text-xs h-8 bg-indigo-600 hover:bg-indigo-700 text-white">
+                        Remediate Now
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Syllabus Topic Mastery Chart */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">

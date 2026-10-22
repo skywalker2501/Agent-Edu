@@ -24,6 +24,7 @@ from app.api.admin_routes import router as admin_router
 from app.api.gamification_routes import router as gamification_router
 from app.api.games_routes import router as games_router
 from app.api.curriculum_routes import router as curriculum_router
+from app.api.live_class_routes import router as live_class_router
 from app.api.health_routes import router as health_router
 
 
@@ -88,3 +89,5 @@ app.include_router(admin_router, prefix=api_v1)
 app.include_router(gamification_router, prefix=api_v1)
 app.include_router(games_router, prefix=api_v1)
 app.include_router(curriculum_router, prefix=api_v1)
+app.include_router(live_class_router, prefix=api_v1)
+

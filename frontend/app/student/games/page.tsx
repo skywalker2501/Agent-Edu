@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { api } from "@/lib/api";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,11 +23,20 @@ import {
   ChevronRight,
   Zap,
   HelpCircle,
-  FileCode
+  FileCode,
+  Flame,
+  Puzzle,
+  Timer
 } from "lucide-react";
 
 export default function LearnAndPlayPage() {
-  const [activeTab, setActiveTab] = useState<"quiz" | "match" | "code" | "flashcards" | "adaptive">("quiz");
+  const [activeTab, setActiveTab] = useState<
+    "quiz" | "puzzle" | "quickfire" | "code" | "match" | "flashcards" | "adaptive"
+  >("quiz");
+
+  // User XP feedback banner
+  const [sessionXpEarned, setSessionXpEarned] = useState<number>(0);
+  const [lastRewardNotice, setLastRewardNotice] = useState<string | null>(null);
 
   // Game A: Quiz Battle State
   const [quizSession, setQuizSession] = useState<any>(null);
@@ -34,14 +44,63 @@ export default function LearnAndPlayPage() {
   const [quizResult, setQuizResult] = useState<any>(null);
   const [quizLoading, setQuizLoading] = useState(false);
 
-  // Game B: Concept Match State
+  // Game B: Word Scramble & Code Puzzle State
+  const [puzzles, setPuzzles] = useState<any[]>([]);
+  const [currentPuzzleIdx, setCurrentPuzzleIdx] = useState<number>(0);
+  const [puzzleInput, setPuzzleInput] = useState<string>("");
+  const [puzzleHintsUsed, setPuzzleHintsUsed] = useState<number>(0);
+  const [showPuzzleHint, setShowPuzzleHint] = useState<boolean>(false);
+  const [puzzleResult, setPuzzleResult] = useState<any>(null);
+  const [puzzleLoading, setPuzzleLoading] = useState<boolean>(false);
+
+  // Game C: Speed Quickfire State
+  const [quickfireQuestions] = useState<any[]>([
+    {
+      id: "qf-1",
+      prompt: "What is the worst-case time complexity of standard QuickSort with poor pivot selection?",
+      options: ["O(n log n)", "O(n²)", "O(log n)", "O(n)"],
+      answer: "O(n²)"
+    },
+    {
+      id: "qf-2",
+      prompt: "Which data structure follows the LIFO (Last In First Out) principle used by recursive call stacks?",
+      options: ["Queue", "Stack", "Binary Heap", "Hash Table"],
+      answer: "Stack"
+    },
+    {
+      id: "qf-3",
+      prompt: "What is the height of a balanced Binary Search Tree containing N nodes?",
+      options: ["O(1)", "O(log N)", "O(N)", "O(N²)"],
+      answer: "O(log N)"
+    },
+    {
+      id: "qf-4",
+      prompt: "In dynamic programming, what technique converts top-down recursive calls into bottom-up array loops?",
+      options: ["Memoization", "Tabulation", "Binary Search", "Divide & Conquer"],
+      answer: "Tabulation"
+    },
+    {
+      id: "qf-5",
+      prompt: "What is the average time complexity to lookup a key in a well-distributed Hash Map?",
+      options: ["O(1)", "O(log n)", "O(n)", "O(n log n)"],
+      answer: "O(1)"
+    }
+  ]);
+  const [quickfireActive, setQuickfireActive] = useState<boolean>(false);
+  const [quickfireCurrentIdx, setQuickfireCurrentIdx] = useState<number>(0);
+  const [quickfireCorrectCount, setQuickfireCorrectCount] = useState<number>(0);
+  const [quickfireSelectedOpt, setQuickfireSelectedOpt] = useState<string | null>(null);
+  const [quickfireFinished, setQuickfireFinished] = useState<boolean>(false);
+  const [quickfireResult, setQuickfireResult] = useState<any>(null);
+
+  // Game D: Concept Match State
   const [matchData, setMatchData] = useState<any>(null);
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
   const [selectedDef, setSelectedDef] = useState<string | null>(null);
   const [matchedPairs, setMatchedPairs] = useState<Array<{ term_id: string; def_id: string }>>([]);
   const [matchResult, setMatchResult] = useState<any>(null);
 
-  // Game C: Code Quest State
+  // Game E: Code Quest State
   const [challenges, setChallenges] = useState<any[]>([]);
   const [selectedChallenge, setSelectedChallenge] = useState<any>(null);
   const [studentCode, setStudentCode] = useState<string>("");
@@ -50,13 +109,13 @@ export default function LearnAndPlayPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hintsRevealed, setHintsRevealed] = useState<number>(0);
 
-  // Game D: Flashcard Sprint State
+  // Game F: Flashcard Sprint State
   const [flashcards, setFlashcards] = useState<any[]>([]);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [reviewStats, setReviewStats] = useState({ known: 0, uncertain: 0, not_understood: 0 });
 
-  // Game E: Adaptive Challenge State
+  // Game G: Adaptive Challenge State
   const [adaptiveData, setAdaptiveData] = useState<any>(null);
   const [adaptiveSelectedOption, setAdaptiveSelectedOption] = useState<string | null>(null);
   const [adaptiveFeedback, setAdaptiveFeedback] = useState<string | null>(null);
@@ -66,7 +125,14 @@ export default function LearnAndPlayPage() {
     loadCodeChallenges();
     loadFlashcards();
     loadAdaptiveChallenge();
+    loadPuzzles();
   }, []);
+
+  const triggerReward = (xp: number, label: string) => {
+    setSessionXpEarned((prev) => prev + xp);
+    setLastRewardNotice(`+${xp} XP Earned! ${label}`);
+    setTimeout(() => setLastRewardNotice(null), 6000);
+  };
 
   // --- Quiz Battle Handlers ---
   const handleStartQuiz = async () => {
@@ -93,11 +159,104 @@ export default function LearnAndPlayPage() {
     try {
       const res = await api.submitQuizBattle(quizSession.session_id, quizAnswers, 45);
       setQuizResult(res);
+      if (res?.xp_awarded > 0) {
+        triggerReward(res.xp_awarded, "Quiz Battle Victory");
+      }
     } catch (err) {
       console.error("Failed to submit quiz battle:", err);
     } finally {
       setQuizLoading(false);
     }
+  };
+
+  // --- Word Scramble & Code Puzzle Handlers ---
+  const loadPuzzles = async () => {
+    setPuzzleLoading(true);
+    try {
+      const list = await api.getWordPuzzles();
+      setPuzzles(list || []);
+      setCurrentPuzzleIdx(0);
+      setPuzzleInput("");
+      setShowPuzzleHint(false);
+      setPuzzleResult(null);
+    } catch (err) {
+      console.error("Failed to load puzzles:", err);
+    } finally {
+      setPuzzleLoading(false);
+    }
+  };
+
+  const handleRevealPuzzleHint = () => {
+    setShowPuzzleHint(true);
+    setPuzzleHintsUsed((prev) => prev + 1);
+  };
+
+  const handleSubmitWordPuzzle = async () => {
+    const current = puzzles[currentPuzzleIdx];
+    if (!current || !puzzleInput.trim()) return;
+    setPuzzleLoading(true);
+    try {
+      const res = await api.submitWordPuzzle(current.id, puzzleInput, puzzleHintsUsed);
+      setPuzzleResult(res);
+      if (res.is_correct && res.xp_awarded > 0) {
+        triggerReward(res.xp_awarded, "Puzzle Solved!");
+      }
+    } catch (err) {
+      console.error("Failed to submit puzzle:", err);
+    } finally {
+      setPuzzleLoading(false);
+    }
+  };
+
+  const handleNextPuzzle = () => {
+    setPuzzleResult(null);
+    setPuzzleInput("");
+    setShowPuzzleHint(false);
+    setPuzzleHintsUsed(0);
+    setCurrentPuzzleIdx((prev) => (prev + 1) % Math.max(1, puzzles.length));
+  };
+
+  // --- Speed Quickfire Handlers ---
+  const handleStartQuickfire = () => {
+    setQuickfireActive(true);
+    setQuickfireCurrentIdx(0);
+    setQuickfireCorrectCount(0);
+    setQuickfireSelectedOpt(null);
+    setQuickfireFinished(false);
+    setQuickfireResult(null);
+  };
+
+  const handleSelectQuickfireOption = (option: string) => {
+    if (quickfireSelectedOpt) return;
+    setQuickfireSelectedOpt(option);
+
+    const currQ = quickfireQuestions[quickfireCurrentIdx];
+    const isCorrect = option === currQ.answer;
+    const newCorrect = isCorrect ? quickfireCorrectCount + 1 : quickfireCorrectCount;
+    if (isCorrect) setQuickfireCorrectCount(newCorrect);
+
+    setTimeout(async () => {
+      if (quickfireCurrentIdx + 1 < quickfireQuestions.length) {
+        setQuickfireCurrentIdx((prev) => prev + 1);
+        setQuickfireSelectedOpt(null);
+      } else {
+        // Round completed
+        setQuickfireFinished(true);
+        try {
+          const res = await api.submitQuickfire(
+            newCorrect * 20,
+            newCorrect,
+            quickfireQuestions.length
+          );
+          setQuickfireResult(res);
+          if (res?.xp_awarded > 0) {
+            triggerReward(res.xp_awarded, "Speed Quickfire Complete!");
+          }
+        } catch (err) {
+          console.error("Quickfire submit error:", err);
+        }
+      }
+    }, 900);
   };
 
   // --- Concept Match Handlers ---
@@ -129,7 +288,12 @@ export default function LearnAndPlayPage() {
       setSelectedDef(null);
 
       if (matchData && updated.length === matchData.pair_count) {
-        api.submitConceptMatch(updated).then((res) => setMatchResult(res));
+        api.submitConceptMatch(updated).then((res) => {
+          setMatchResult(res);
+          if (res?.xp_awarded > 0) {
+            triggerReward(res.xp_awarded, "Concept Match Completed!");
+          }
+        });
       }
     }
   };
@@ -138,48 +302,60 @@ export default function LearnAndPlayPage() {
   const loadCodeChallenges = async () => {
     try {
       const list = await api.getCodeChallenges();
-      setChallenges(list);
-      if (list.length > 0) {
-        loadSpecificChallenge(list[0].slug);
+      setChallenges(list || []);
+      if (list && list.length > 0) {
+        handleSelectChallenge(list[0].slug);
       }
     } catch (err) {
       console.error("Failed to load code challenges:", err);
     }
   };
 
-  const loadSpecificChallenge = async (slug: string) => {
+  const handleSelectChallenge = async (slug: string) => {
     try {
-      const c = await api.getCodeChallenge(slug);
-      setSelectedChallenge(c);
-      setStudentCode(c.initial_code || "");
+      const detail = await api.getCodeChallenge(slug);
+      setSelectedChallenge(detail);
+      setStudentCode(detail.initial_code || "");
       setCodeExecution(null);
       setHintsRevealed(0);
     } catch (err) {
-      console.error("Failed to load challenge:", err);
+      console.error("Failed to load challenge details:", err);
     }
   };
 
-  const handleRunCode = async () => {
+  const handleExecuteCode = async () => {
     if (!selectedChallenge) return;
     setIsExecuting(true);
+    setCodeExecution(null);
     try {
-      const res = await api.executeCodeQuest(selectedChallenge.slug, studentCode, selectedChallenge.language);
+      const res = await api.executeCodeQuest(
+        selectedChallenge.slug,
+        studentCode,
+        selectedChallenge.language
+      );
       setCodeExecution(res);
-    } catch (err: any) {
-      setCodeExecution({ passed: false, error: err.message || "Execution failed" });
+    } catch (err) {
+      console.error("Failed to execute code sandbox:", err);
     } finally {
       setIsExecuting(false);
     }
   };
 
-  const handleSubmitCode = async () => {
+  const handleSubmitChallenge = async () => {
     if (!selectedChallenge) return;
     setIsSubmitting(true);
     try {
-      const res = await api.submitCodeQuest(selectedChallenge.slug, studentCode, selectedChallenge.language);
+      const res = await api.submitCodeQuest(
+        selectedChallenge.slug,
+        studentCode,
+        selectedChallenge.language
+      );
       setCodeExecution(res);
-    } catch (err: any) {
-      setCodeExecution({ passed: false, error: err.message || "Submission failed" });
+      if (res?.xp_awarded > 0) {
+        triggerReward(res.xp_awarded, `Code Quest Solved: ${selectedChallenge.title}`);
+      }
+    } catch (err) {
+      console.error("Failed to submit challenge:", err);
     } finally {
       setIsSubmitting(false);
     }
@@ -204,6 +380,7 @@ export default function LearnAndPlayPage() {
     try {
       await api.reviewFlashcard(card.id, rating);
       setReviewStats((prev) => ({ ...prev, [rating]: prev[rating] + 1 }));
+      triggerReward(5, "Flashcard Reviewed");
 
       if (currentCardIndex + 1 < flashcards.length) {
         setCurrentCardIndex((prev) => prev + 1);
@@ -229,9 +406,12 @@ export default function LearnAndPlayPage() {
   const handleAdaptiveSubmit = () => {
     if (!adaptiveSelectedOption) return;
     setAdaptiveFeedback(
-      `Answer recorded. Your mastery evidence has been updated based on this ${adaptiveData?.difficulty_selected} challenge attempt.`
+      `Answer recorded. Your mastery evidence has been updated based on this ${adaptiveData?.difficulty_selected} challenge attempt (+20 XP).`
     );
+    triggerReward(20, "Adaptive Diagnostic Challenge");
   };
+
+  const currentPuzzle = puzzles[currentPuzzleIdx];
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -239,23 +419,46 @@ export default function LearnAndPlayPage() {
       <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-2xl p-6 sm:p-8 text-white shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" /> Syllabus-Linked Learning Games
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" /> Syllabus-Linked Learning Games & Arcade
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Learn & Play Hub</h1>
           <p className="text-indigo-100/90 text-sm max-w-xl mt-1">
-            Solve programming puzzles, compete in timed quiz battles, and practice spaced repetition to earn verified XP points.
+            Solve coding puzzles, word scrambles, timed quiz battles, and quickfire challenges to earn verified XP points displayed on the global leaderboard.
           </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Link href="/student/leaderboard">
+            <Button className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs sm:text-sm shadow-md">
+              <Trophy className="w-4 h-4 mr-1.5 fill-slate-950" /> View Global Leaderboard
+            </Button>
+          </Link>
         </div>
       </div>
 
+      {/* Live Reward Toast / XP Bar */}
+      {lastRewardNotice && (
+        <div className="p-3.5 rounded-xl bg-gradient-to-r from-emerald-500/10 via-amber-500/10 to-indigo-500/10 border border-emerald-400 text-emerald-800 dark:text-emerald-300 text-xs sm:text-sm font-bold flex items-center justify-between animate-in slide-in-from-top-2">
+          <div className="flex items-center gap-2">
+            <Flame className="w-4 h-4 text-amber-500 fill-amber-500 animate-bounce" />
+            <span>{lastRewardNotice}</span>
+          </div>
+          <Link href="/student/leaderboard" className="underline hover:text-emerald-900 text-xs">
+            Check Leaderboard Rank →
+          </Link>
+        </div>
+      )}
+
       {/* Game Selector Tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
+      <div className="flex flex-wrap gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
         {[
           { key: "quiz", label: "Quiz Battle", icon: Trophy },
+          { key: "puzzle", label: "Word Scramble & Puzzle", icon: Puzzle },
+          { key: "quickfire", label: "Speed Quickfire", icon: Zap },
           { key: "code", label: "Code Quest (Java / Python)", icon: Code2 },
-          { key: "match", label: "Concept Match", icon: Zap },
+          { key: "match", label: "Concept Match", icon: Sparkles },
           { key: "flashcards", label: "Flashcard Sprint", icon: Clock },
-          { key: "adaptive", label: "Adaptive Challenge", icon: Sparkles },
+          { key: "adaptive", label: "Adaptive Challenge", icon: Award },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
@@ -263,10 +466,10 @@ export default function LearnAndPlayPage() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key as any)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all ${
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer ${
                 isActive
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-100"
-                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-100 dark:shadow-none"
+                  : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700"
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -283,11 +486,11 @@ export default function LearnAndPlayPage() {
         <div className="space-y-6">
           {!quizSession && !quizResult && (
             <Card className="text-center py-12 px-4 border-dashed border-2">
-              <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 mx-auto flex items-center justify-center mb-4 shadow-sm">
+              <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 mx-auto flex items-center justify-center mb-4 shadow-sm">
                 <Trophy className="w-8 h-8" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Ready for a Quiz Battle?</h3>
-              <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">Ready for a Quiz Battle?</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
                 Answer 5 syllabus-linked questions against the clock. Earn +15 XP for every correct answer, plus speed and accuracy streak bonuses!
               </p>
               <Button onClick={handleStartQuiz} disabled={quizLoading} size="lg" className="bg-indigo-600 hover:bg-indigo-700 font-bold">
@@ -298,11 +501,11 @@ export default function LearnAndPlayPage() {
 
           {quizSession && !quizResult && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between bg-indigo-50 p-4 rounded-xl border border-indigo-100">
-                <span className="font-bold text-sm text-indigo-950 flex items-center gap-2">
+              <div className="flex items-center justify-between bg-indigo-50 dark:bg-indigo-950/40 p-4 rounded-xl border border-indigo-100 dark:border-indigo-900">
+                <span className="font-bold text-sm text-indigo-950 dark:text-indigo-200 flex items-center gap-2">
                   <Clock className="w-4 h-4 text-indigo-600" /> Timed Round: 5 Questions
                 </span>
-                <span className="text-xs font-semibold text-indigo-700">
+                <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
                   {Object.keys(quizAnswers).length} / {quizSession.questions.length} Answered
                 </span>
               </div>
@@ -315,8 +518,8 @@ export default function LearnAndPlayPage() {
                         <span className="text-xs font-bold text-indigo-600 uppercase">Question {idx + 1}</span>
                         <Badge variant="outline" className="capitalize text-xs">{q.difficulty}</Badge>
                       </div>
-                      <CardTitle className="text-base font-bold text-slate-900">{q.title}</CardTitle>
-                      <CardDescription className="text-sm text-slate-700">{q.prompt}</CardDescription>
+                      <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">{q.title}</CardTitle>
+                      <CardDescription className="text-sm text-slate-700 dark:text-slate-300">{q.prompt}</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -326,10 +529,10 @@ export default function LearnAndPlayPage() {
                             <button
                               key={optIdx}
                               onClick={() => handleSelectQuizAnswer(q.id, opt)}
-                              className={`p-3 rounded-lg text-left text-sm font-medium border transition-all ${
+                              className={`p-3 rounded-lg text-left text-sm font-medium border transition-all cursor-pointer ${
                                 isSelected
-                                  ? "bg-indigo-50 border-indigo-500 text-indigo-900 font-bold ring-2 ring-indigo-500/20"
-                                  : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                                  ? "bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500 text-indigo-900 dark:text-indigo-200 font-bold ring-2 ring-indigo-500/20"
+                                  : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
                               }`}
                             >
                               {opt}
@@ -349,365 +552,597 @@ export default function LearnAndPlayPage() {
                   className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
                   size="lg"
                 >
-                  Submit & Verify Answers
+                  {quizLoading ? "Grading..." : "Submit Answers (+XP)"}
                 </Button>
               </div>
             </div>
           )}
 
           {quizResult && (
-            <Card className="border-emerald-200 bg-gradient-to-br from-white to-emerald-50/20">
-              <CardHeader className="text-center pb-2">
-                <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-700 mx-auto flex items-center justify-center mb-2 shadow-sm">
-                  <CheckCircle2 className="w-8 h-8" />
-                </div>
-                <CardTitle className="text-2xl font-bold text-slate-900">Battle Complete!</CardTitle>
-                <CardDescription className="text-sm text-emerald-800 font-semibold">
-                  You scored {quizResult.score} points and earned +{quizResult.xp_awarded} XP!
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-4">
-                <div className="grid grid-cols-3 gap-3 text-center">
-                  <div className="p-3 bg-white rounded-lg border border-slate-100">
-                    <p className="text-xs text-slate-500">Correct</p>
-                    <p className="text-xl font-bold text-slate-900">{quizResult.correct_count} / {quizResult.total_questions}</p>
-                  </div>
-                  <div className="p-3 bg-white rounded-lg border border-slate-100">
-                    <p className="text-xs text-slate-500">Accuracy</p>
-                    <p className="text-xl font-bold text-slate-900">{Math.round(quizResult.accuracy * 100)}%</p>
-                  </div>
-                  <div className="p-3 bg-white rounded-lg border border-slate-100">
-                    <p className="text-xs text-slate-500">XP Awarded</p>
-                    <p className="text-xl font-bold text-emerald-600">+{quizResult.xp_awarded} XP</p>
-                  </div>
-                </div>
+            <Card className="p-6 text-center border-emerald-200 bg-emerald-50/20 dark:bg-emerald-950/20">
+              <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center mb-4">
+                <CheckCircle2 className="w-8 h-8" />
+              </div>
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1">Battle Completed!</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                You answered {quizResult.correct_count} of {quizResult.total_questions} questions correctly (
+                {Math.round(quizResult.accuracy * 100)}% accuracy).
+              </p>
 
-                <div className="divide-y divide-slate-100 pt-3">
-                  {quizResult.breakdown?.map((b: any, idx: number) => (
-                    <div key={idx} className="py-2.5 flex items-start justify-between gap-4 text-xs">
-                      <div>
-                        <p className="font-bold text-slate-800">{b.title}</p>
-                        <p className="text-slate-500">Your Answer: <span className={b.is_correct ? "text-emerald-600 font-bold" : "text-rose-600 font-bold"}>{b.user_answer}</span></p>
-                      </div>
-                      <Badge variant={b.is_correct ? "default" : "destructive"}>
-                        {b.is_correct ? "Correct" : "Incorrect"}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 rounded-full font-bold text-lg mb-6">
+                <Sparkles className="w-5 h-5 text-amber-500 fill-amber-500" />
+                +{quizResult.xp_awarded} XP Earned
+              </div>
 
-                <div className="pt-4 text-center">
-                  <Button onClick={handleStartQuiz} className="bg-indigo-600 hover:bg-indigo-700 font-bold">
-                    Play Another Round
+              <div className="flex justify-center gap-3">
+                <Button onClick={handleStartQuiz} className="bg-indigo-600 hover:bg-indigo-700">
+                  <RotateCcw className="w-4 h-4 mr-2" /> Play Another Round
+                </Button>
+                <Link href="/student/leaderboard">
+                  <Button variant="outline">
+                    <Trophy className="w-4 h-4 mr-2" /> View Leaderboard
                   </Button>
-                </div>
-              </CardContent>
+                </Link>
+              </div>
             </Card>
           )}
         </div>
       )}
 
       {/* ============================================================= */}
-      {/* GAME B: CONCEPT MATCH */}
+      {/* GAME B: WORD SCRAMBLE & CONCEPT PUZZLE */}
+      {/* ============================================================= */}
+      {activeTab === "puzzle" && (
+        <div className="space-y-6">
+          <Card className="border-indigo-100 dark:border-indigo-900">
+            <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
+                    Puzzle {currentPuzzleIdx + 1} of {puzzles.length || 5}
+                  </Badge>
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    Category: {currentPuzzle?.category || "Computer Science"}
+                  </span>
+                </div>
+                <CardTitle className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-2">
+                  Unscramble the Concept
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-500">
+                  Rearrange the jumbled letters to identify the computer science concept. Earn up to +30 XP!
+                </CardDescription>
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNextPuzzle}
+                className="text-xs"
+              >
+                Skip / Next <ArrowRight className="w-3.5 h-3.5 ml-1" />
+              </Button>
+            </CardHeader>
+
+            <CardContent className="space-y-6 pt-2">
+              {currentPuzzle ? (
+                <>
+                  {/* Scrambled Letter Tiles */}
+                  <div className="py-6 px-4 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-center gap-2">
+                    {currentPuzzle.scrambled.split("").map((letter: string, idx: number) => (
+                      <div
+                        key={idx}
+                        className="w-11 h-12 rounded-xl bg-white dark:bg-slate-800 border-2 border-indigo-200 dark:border-indigo-700 shadow-sm flex items-center justify-center text-xl font-extrabold text-indigo-900 dark:text-indigo-200 select-none animate-in zoom-in-50"
+                      >
+                        {letter}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Hint Section */}
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-500 dark:text-slate-400">
+                      Word Length: <strong>{currentPuzzle.length} letters</strong>
+                    </span>
+                    {!showPuzzleHint ? (
+                      <button
+                        onClick={handleRevealPuzzleHint}
+                        className="flex items-center gap-1 text-amber-600 dark:text-amber-400 hover:underline font-semibold cursor-pointer"
+                      >
+                        <Lightbulb className="w-3.5 h-3.5" /> Reveal Hint (-5 XP penalty)
+                      </button>
+                    ) : (
+                      <span className="text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1 rounded-md border border-amber-200 dark:border-amber-800">
+                        💡 Hint: {currentPuzzle.hint}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Submission Form */}
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <input
+                      type="text"
+                      placeholder="Type your unscrambled answer here..."
+                      value={puzzleInput}
+                      onChange={(e) => setPuzzleInput(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleSubmitWordPuzzle();
+                      }}
+                      className="flex-1 w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-bold uppercase tracking-wider text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <Button
+                      onClick={handleSubmitWordPuzzle}
+                      disabled={puzzleLoading || !puzzleInput.trim()}
+                      className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 font-bold text-xs sm:text-sm"
+                    >
+                      {puzzleLoading ? "Verifying..." : "Submit Answer"}
+                    </Button>
+                  </div>
+
+                  {/* Puzzle Outcome Result */}
+                  {puzzleResult && (
+                    <div
+                      className={`p-4 rounded-xl border text-sm flex items-start justify-between gap-3 ${
+                        puzzleResult.is_correct
+                          ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 text-emerald-900 dark:text-emerald-200"
+                          : "bg-rose-50 dark:bg-rose-950/30 border-rose-300 text-rose-900 dark:text-rose-200"
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center gap-1.5 font-bold">
+                          {puzzleResult.is_correct ? (
+                            <>
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Correct! +{puzzleResult.xp_awarded} XP Earned
+                            </>
+                          ) : (
+                            <>
+                              <AlertCircle className="w-4 h-4 text-rose-600" /> Not quite right. Keep trying!
+                            </>
+                          )}
+                        </div>
+                        <p className="text-xs mt-1 opacity-90">{puzzleResult.explanation}</p>
+                      </div>
+
+                      {puzzleResult.is_correct && (
+                        <Button
+                          size="sm"
+                          onClick={handleNextPuzzle}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs shrink-0"
+                        >
+                          Next Puzzle <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <Button onClick={loadPuzzles}>Load Puzzles</Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ============================================================= */}
+      {/* GAME C: SPEED COMPLEXITY & LOGIC QUICKFIRE */}
+      {/* ============================================================= */}
+      {activeTab === "quickfire" && (
+        <div className="space-y-6">
+          {!quickfireActive && !quickfireFinished && (
+            <Card className="text-center py-12 px-4 border-dashed border-2">
+              <div className="w-16 h-16 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 mx-auto flex items-center justify-center mb-4 shadow-sm">
+                <Zap className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+                Algorithmic Complexity Quickfire
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
+                5 rapid-fire questions testing algorithm Big-O complexities and memory invariants. Earn +12 XP per correct answer!
+              </p>
+              <Button onClick={handleStartQuickfire} size="lg" className="bg-amber-600 hover:bg-amber-700 text-white font-bold">
+                <Play className="w-4 h-4 mr-1.5 fill-white" /> Start Quickfire
+              </Button>
+            </Card>
+          )}
+
+          {quickfireActive && !quickfireFinished && (
+            <Card className="border-indigo-100 dark:border-indigo-900">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase">
+                    Question {quickfireCurrentIdx + 1} of {quickfireQuestions.length}
+                  </span>
+                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                    Score: {quickfireCorrectCount} Correct
+                  </span>
+                </div>
+                <CardTitle className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                  {quickfireQuestions[quickfireCurrentIdx].prompt}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {quickfireQuestions[quickfireCurrentIdx].options.map((opt: string, idx: number) => {
+                    const isSelected = quickfireSelectedOpt === opt;
+                    const isAnswer = opt === quickfireQuestions[quickfireCurrentIdx].answer;
+
+                    let btnStyle = "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-50";
+                    if (quickfireSelectedOpt) {
+                      if (isAnswer) {
+                        btnStyle = "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500 text-emerald-900 dark:text-emerald-200 font-bold";
+                      } else if (isSelected) {
+                        btnStyle = "bg-rose-50 dark:bg-rose-950/60 border-rose-500 text-rose-900 dark:text-rose-200 font-bold";
+                      }
+                    }
+
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => handleSelectQuickfireOption(opt)}
+                        disabled={!!quickfireSelectedOpt}
+                        className={`p-4 rounded-xl border text-left font-bold text-sm transition-all cursor-pointer ${btnStyle}`}
+                      >
+                        {opt}
+                      </button>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {quickfireFinished && (
+            <Card className="p-6 text-center border-amber-200 bg-amber-50/20 dark:bg-amber-950/20">
+              <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-600 mx-auto flex items-center justify-center mb-4">
+                <Trophy className="w-8 h-8" />
+              </div>
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1">Quickfire Finished!</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                You got {quickfireCorrectCount} out of {quickfireQuestions.length} correct in the lightning round!
+              </p>
+
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 rounded-full font-bold text-lg mb-6">
+                <Sparkles className="w-5 h-5 text-amber-500 fill-amber-500" />
+                +{quickfireResult?.xp_awarded ?? quickfireCorrectCount * 12} XP Earned
+              </div>
+
+              <div className="flex justify-center gap-3">
+                <Button onClick={handleStartQuickfire} className="bg-amber-600 hover:bg-amber-700 text-white">
+                  <RotateCcw className="w-4 h-4 mr-2" /> Play Again
+                </Button>
+                <Link href="/student/leaderboard">
+                  <Button variant="outline">
+                    <Trophy className="w-4 h-4 mr-2" /> View Leaderboard
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* ============================================================= */}
+      {/* GAME D: CODE QUEST */}
+      {/* ============================================================= */}
+      {activeTab === "code" && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+              Available Challenges
+            </h3>
+            <div className="space-y-2">
+              {challenges.map((c) => (
+                <div
+                  key={c.id}
+                  onClick={() => handleSelectChallenge(c.slug)}
+                  className={`p-3 rounded-xl border transition-all cursor-pointer ${
+                    selectedChallenge?.slug === c.slug
+                      ? "bg-indigo-50 dark:bg-indigo-950/60 border-indigo-400 shadow-sm"
+                      : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <Badge variant="outline" className="uppercase text-[10px] font-bold">
+                      {c.language}
+                    </Badge>
+                    <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">+{c.xp_reward} XP</span>
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">{c.title}</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5">{c.problem_statement}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="lg:col-span-2 space-y-4">
+            {selectedChallenge ? (
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="outline" className="capitalize text-xs">
+                      {selectedChallenge.difficulty}
+                    </Badge>
+                    <span className="text-xs font-semibold text-slate-500">
+                      Reward: <strong>+{selectedChallenge.xp_reward} XP</strong>
+                    </span>
+                  </div>
+                  <CardTitle className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                    {selectedChallenge.title}
+                  </CardTitle>
+                  <CardDescription className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                    {selectedChallenge.problem_statement}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                      Code Editor ({selectedChallenge.language})
+                    </label>
+                    <textarea
+                      rows={12}
+                      value={studentCode}
+                      onChange={(e) => setStudentCode(e.target.value)}
+                      className="w-full font-mono text-xs sm:text-sm p-4 rounded-xl bg-slate-950 text-emerald-400 border border-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={() => setHintsRevealed((prev) => Math.min(prev + 1, selectedChallenge.hints?.length || 0))}
+                        variant="outline"
+                        size="sm"
+                        className="text-xs"
+                      >
+                        <Lightbulb className="w-3.5 h-3.5 mr-1 text-amber-500" />
+                        Hint ({hintsRevealed}/{selectedChallenge.hints?.length || 0})
+                      </Button>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={handleExecuteCode}
+                        disabled={isExecuting}
+                        variant="outline"
+                        size="sm"
+                        className="text-xs"
+                      >
+                        {isExecuting ? "Running..." : "Run Test Cases"}
+                      </Button>
+                      <Button
+                        onClick={handleSubmitChallenge}
+                        disabled={isSubmitting}
+                        size="sm"
+                        className="bg-indigo-600 hover:bg-indigo-700 text-xs font-bold"
+                      >
+                        {isSubmitting ? "Submitting..." : "Submit Solution (+XP)"}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {hintsRevealed > 0 && selectedChallenge.hints && (
+                    <div className="space-y-1 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-900 dark:text-amber-200">
+                      <span className="font-bold flex items-center gap-1">
+                        <Lightbulb className="w-3.5 h-3.5" /> Hints:
+                      </span>
+                      {selectedChallenge.hints.slice(0, hintsRevealed).map((h: string, idx: number) => (
+                        <p key={idx} className="pl-4">• {h}</p>
+                      ))}
+                    </div>
+                  )}
+
+                  {codeExecution && (
+                    <div
+                      className={`p-4 rounded-xl border text-xs space-y-2 ${
+                        codeExecution.passed
+                          ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 text-emerald-900 dark:text-emerald-200"
+                          : "bg-rose-50 dark:bg-rose-950/30 border-rose-300 text-rose-900 dark:text-rose-200"
+                      }`}
+                    >
+                      <div className="font-bold flex items-center justify-between">
+                        <span>
+                          {codeExecution.passed
+                            ? "✓ All Test Cases Passed!"
+                            : "✗ Some Tests Failed"}
+                        </span>
+                        <span>
+                          {codeExecution.tests_passed} / {codeExecution.tests_total} Tests
+                        </span>
+                      </div>
+                      {codeExecution.output && (
+                        <pre className="p-2 bg-slate-900 text-slate-100 rounded text-[11px] overflow-x-auto">
+                          {codeExecution.output}
+                        </pre>
+                      )}
+                      {codeExecution.error && (
+                        <p className="font-mono text-rose-600 dark:text-rose-400">{codeExecution.error}</p>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="text-center py-12">
+                <CardContent>Select a challenge to begin coding.</CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================= */}
+      {/* GAME E: CONCEPT MATCH */}
       {/* ============================================================= */}
       {activeTab === "match" && (
         <div className="space-y-6">
-          {!matchData && !matchResult && (
+          {!matchData && (
             <Card className="text-center py-12 px-4 border-dashed border-2">
-              <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 mx-auto flex items-center justify-center mb-4 shadow-sm">
+              <div className="w-16 h-16 rounded-2xl bg-violet-50 dark:bg-violet-950/40 text-violet-600 mx-auto flex items-center justify-center mb-4">
                 <Zap className="w-8 h-8" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Concept Match</h3>
-              <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">
-                Match data structure concepts and asymptotic complexities with their exact definitions. Test your recall speed!
+              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">Concept Match Memory Challenge</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
+                Pair programming terms with their correct definitions. Match all pairs accurately to earn XP!
               </p>
-              <Button onClick={handleStartMatch} size="lg" className="bg-amber-600 hover:bg-amber-700 font-bold">
+              <Button onClick={handleStartMatch} size="lg" className="bg-violet-600 hover:bg-violet-700 font-bold">
                 Start Concept Match
               </Button>
             </Card>
           )}
 
           {matchData && !matchResult && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between bg-amber-50 p-4 rounded-xl border border-amber-200">
-                <span className="text-xs font-bold text-amber-900">
-                  Select a Term on the left, then click its matching Definition on the right.
-                </span>
-                <span className="text-xs font-bold text-amber-700">
-                  Matched: {matchedPairs.length} / {matchData.pair_count}
-                </span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Terms & Concepts
+                </h3>
+                {matchData.terms.map((t: any) => {
+                  const isMatched = matchedPairs.some((p) => p.term_id === t.id);
+                  const isSelected = selectedTerm === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      disabled={isMatched}
+                      onClick={() => handlePairSelection(t.id, undefined)}
+                      className={`w-full p-4 rounded-xl text-left text-sm font-bold border transition-all cursor-pointer ${
+                        isMatched
+                          ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 text-emerald-800 dark:text-emerald-300 opacity-60 line-through"
+                          : isSelected
+                          ? "bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500 text-indigo-900 dark:text-indigo-200 ring-2 ring-indigo-500/20"
+                          : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700"
+                      }`}
+                    >
+                      {t.text}
+                    </button>
+                  );
+                })}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Terms column */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Concept Terms</h4>
-                  {matchData.terms.map((t: any) => {
-                    const isMatched = matchedPairs.some((p) => p.term_id === t.id);
-                    const isSelected = selectedTerm === t.id;
-                    return (
-                      <button
-                        key={t.id}
-                        disabled={isMatched}
-                        onClick={() => handlePairSelection(t.id, undefined)}
-                        className={`w-full p-4 rounded-xl text-left text-sm font-semibold border transition-all ${
-                          isMatched
-                            ? "bg-slate-100 text-slate-400 border-slate-200 line-through"
-                            : isSelected
-                            ? "bg-amber-100 border-amber-500 text-amber-950 ring-2 ring-amber-500/20 shadow-sm"
-                            : "bg-white border-slate-200 text-slate-800 hover:bg-slate-50"
-                        }`}
-                      >
-                        {t.text}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Definitions column */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Definitions & Invariants</h4>
-                  {matchData.definitions.map((d: any) => {
-                    const isMatched = matchedPairs.some((p) => p.def_id === d.id);
-                    const isSelected = selectedDef === d.id;
-                    return (
-                      <button
-                        key={d.id}
-                        disabled={isMatched}
-                        onClick={() => handlePairSelection(undefined, d.id)}
-                        className={`w-full p-4 rounded-xl text-left text-sm font-medium border transition-all ${
-                          isMatched
-                            ? "bg-slate-100 text-slate-400 border-slate-200 line-through"
-                            : isSelected
-                            ? "bg-amber-100 border-amber-500 text-amber-950 ring-2 ring-amber-500/20 shadow-sm"
-                            : "bg-white border-slate-200 text-slate-800 hover:bg-slate-50"
-                        }`}
-                      >
-                        {d.text}
-                      </button>
-                    );
-                  })}
-                </div>
+              <div className="space-y-3">
+                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Definitions & Invariants
+                </h3>
+                {matchData.definitions.map((d: any) => {
+                  const isMatched = matchedPairs.some((p) => p.def_id === d.id);
+                  const isSelected = selectedDef === d.id;
+                  return (
+                    <button
+                      key={d.id}
+                      disabled={isMatched}
+                      onClick={() => handlePairSelection(undefined, d.id)}
+                      className={`w-full p-4 rounded-xl text-left text-xs sm:text-sm font-medium border transition-all cursor-pointer ${
+                        isMatched
+                          ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 text-emerald-800 dark:text-emerald-300 opacity-60"
+                          : isSelected
+                          ? "bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500 text-indigo-900 dark:text-indigo-200 ring-2 ring-indigo-500/20"
+                          : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+                      }`}
+                    >
+                      {d.text}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
 
           {matchResult && (
-            <Card className="text-center py-8 border-amber-200 bg-amber-50/20">
-              <CardHeader>
-                <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 mx-auto flex items-center justify-center mb-2 shadow-sm">
-                  <Award className="w-8 h-8" />
-                </div>
-                <CardTitle className="text-2xl font-bold text-slate-900">Match Completed!</CardTitle>
-                <CardDescription className="text-sm text-slate-600">
-                  You matched {matchResult.correct_matches} / {matchResult.total_pairs} correctly and earned +{matchResult.xp_awarded} XP!
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button onClick={handleStartMatch} className="bg-amber-600 hover:bg-amber-700 font-bold">
-                  Play Again
+            <Card className="p-6 text-center border-violet-200 bg-violet-50/20 dark:bg-violet-950/20">
+              <div className="w-16 h-16 rounded-full bg-violet-100 text-violet-600 mx-auto flex items-center justify-center mb-4">
+                <Sparkles className="w-8 h-8" />
+              </div>
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-1">Match Completed!</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                You matched {matchResult.correct_matches} of {matchResult.total_pairs} pairs correctly.
+              </p>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-violet-100 dark:bg-violet-900/40 text-violet-800 dark:text-violet-200 rounded-full font-bold text-lg mb-6">
+                <Sparkles className="w-5 h-5 text-amber-500 fill-amber-500" />
+                +{matchResult.xp_awarded} XP Earned
+              </div>
+              <div className="flex justify-center gap-3">
+                <Button onClick={handleStartMatch} className="bg-violet-600 hover:bg-violet-700">
+                  <RotateCcw className="w-4 h-4 mr-2" /> Play Again
                 </Button>
-              </CardContent>
+                <Link href="/student/leaderboard">
+                  <Button variant="outline">View Leaderboard</Button>
+                </Link>
+              </div>
             </Card>
           )}
         </div>
       )}
 
       {/* ============================================================= */}
-      {/* GAME C: CODE QUEST (Java & Python Sandbox) */}
-      {/* ============================================================= */}
-      {activeTab === "code" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Challenges List Sidebar */}
-          <div className="space-y-4">
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Select Programming Challenge</h3>
-            <div className="space-y-2">
-              {challenges.map((c) => {
-                const isSelected = selectedChallenge?.slug === c.slug;
-                return (
-                  <button
-                    key={c.slug}
-                    onClick={() => loadSpecificChallenge(c.slug)}
-                    className={`w-full text-left p-3.5 rounded-xl border transition-all ${
-                      isSelected
-                        ? "bg-indigo-50 border-indigo-400 text-indigo-900 ring-2 ring-indigo-500/20 font-bold shadow-sm"
-                        : "bg-white border-slate-200 text-slate-800 hover:bg-slate-50"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                        {c.language}
-                      </span>
-                      <span className="text-xs text-emerald-600 font-bold">+{c.xp_reward} XP</span>
-                    </div>
-                    <p className="text-sm font-semibold truncate">{c.title}</p>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Code Editor & Problem Workspace */}
-          {selectedChallenge && (
-            <div className="lg:col-span-2 space-y-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <Badge variant="outline" className="uppercase font-bold text-xs">{selectedChallenge.language} 24 Sandbox</Badge>
-                    <span className="text-xs text-slate-500 font-medium capitalize">{selectedChallenge.difficulty}</span>
-                  </div>
-                  <CardTitle className="text-lg font-bold text-slate-900">{selectedChallenge.title}</CardTitle>
-                  <CardDescription className="text-xs text-slate-700 leading-relaxed">
-                    {selectedChallenge.problem_statement}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Code Editor Area */}
-                  <div>
-                    <div className="flex items-center justify-between px-3 py-1.5 bg-slate-900 text-slate-300 text-xs font-mono rounded-t-lg">
-                      <span>{selectedChallenge.language === "java" ? "Solution.java" : "solution.py"}</span>
-                      <span className="text-slate-400">Isolated JVM Sandbox</span>
-                    </div>
-                    <textarea
-                      value={studentCode}
-                      onChange={(e) => setStudentCode(e.target.value)}
-                      rows={14}
-                      className="w-full font-mono text-xs p-3.5 bg-slate-950 text-emerald-400 rounded-b-lg border-x border-b border-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                    />
-                  </div>
-
-                  {/* Actions & Hint Buttons */}
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      {selectedChallenge.hints?.length > 0 && hintsRevealed < selectedChallenge.hints.length && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setHintsRevealed((prev) => prev + 1)}
-                          className="text-xs text-amber-700 border-amber-300 bg-amber-50 hover:bg-amber-100"
-                        >
-                          <Lightbulb className="w-3.5 h-3.5 mr-1" /> Get Hint ({hintsRevealed}/{selectedChallenge.hints.length})
-                        </Button>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleRunCode}
-                        disabled={isExecuting || isSubmitting}
-                        className="text-xs font-semibold"
-                      >
-                        {isExecuting ? "Compiling..." : "Test Sandbox Run"}
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={handleSubmitCode}
-                        disabled={isExecuting || isSubmitting}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold"
-                      >
-                        {isSubmitting ? "Evaluating..." : "Submit for XP"}
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Progressive Hints */}
-                  {hintsRevealed > 0 && (
-                    <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1">
-                      <span className="font-bold">Progressive Clue:</span>
-                      <p>{selectedChallenge.hints[hintsRevealed - 1]}</p>
-                    </div>
-                  )}
-
-                  {/* Execution Output Box */}
-                  {codeExecution && (
-                    <div className={`p-4 rounded-xl border text-xs font-mono ${
-                      codeExecution.passed ? "bg-emerald-50 border-emerald-300 text-emerald-950" : "bg-rose-50 border-rose-300 text-rose-950"
-                    }`}>
-                      <div className="flex items-center justify-between mb-2 font-bold font-sans">
-                        <span className="flex items-center gap-1.5">
-                          {codeExecution.passed ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <AlertCircle className="w-4 h-4 text-rose-600" />}
-                          {codeExecution.passed ? "Verification Passed!" : "Execution Issues Detected"}
-                        </span>
-                        {codeExecution.xp_awarded > 0 && (
-                          <span className="text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full font-bold">
-                            +{codeExecution.xp_awarded} XP Awarded!
-                          </span>
-                        )}
-                      </div>
-                      <p className="whitespace-pre-wrap">{codeExecution.output || codeExecution.error}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ============================================================= */}
-      {/* GAME D: FLASHCARD SPRINT */}
+      {/* GAME F: FLASHCARD SPRINT */}
       {/* ============================================================= */}
       {activeTab === "flashcards" && (
-        <div className="max-w-2xl mx-auto space-y-6">
+        <div className="max-w-xl mx-auto space-y-6">
           {flashcards.length > 0 && currentCardIndex < flashcards.length ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between text-xs text-slate-500 font-semibold">
-                <span>Card {currentCardIndex + 1} of {flashcards.length}</span>
-                <span>Spaced Repetition Review</span>
+              <div className="flex items-center justify-between text-xs text-slate-500">
+                <span>
+                  Card {currentCardIndex + 1} of {flashcards.length}
+                </span>
+                <span className="font-semibold capitalize text-indigo-600">
+                  {flashcards[currentCardIndex].card_type}
+                </span>
               </div>
 
-              {/* Flashcard Flip Card */}
               <div
-                onClick={() => setIsFlipped(!isFlipped)}
-                className="cursor-pointer min-h-[220px] p-8 rounded-2xl bg-white border border-slate-200 shadow-md hover:shadow-lg transition-all flex flex-col justify-between"
+                onClick={() => setIsFlipped((prev) => !prev)}
+                className="min-h-64 p-8 rounded-2xl border-2 border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-800 shadow-md flex flex-col items-center justify-center text-center cursor-pointer transition-all hover:border-indigo-400 select-none"
               >
-                <div>
-                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full uppercase">
-                    {isFlipped ? "Solution & Invariant" : "Prompt / Question"}
-                  </span>
-                  <p className="text-base sm:text-lg font-bold text-slate-900 mt-4 leading-relaxed">
-                    {isFlipped ? flashcards[currentCardIndex].back_solution : flashcards[currentCardIndex].front_prompt}
-                  </p>
-                </div>
-                <p className="text-[11px] text-slate-400 text-center italic mt-4">
-                  (Click card to {isFlipped ? "show prompt" : "reveal answer"})
-                </p>
+                {!isFlipped ? (
+                  <>
+                    <span className="text-xs font-bold text-indigo-600 uppercase mb-4">Prompt</span>
+                    <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100">
+                      {flashcards[currentCardIndex].front_prompt}
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-6">Click card to reveal answer</p>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-xs font-bold text-emerald-600 uppercase mb-4">Solution & Explanation</span>
+                    <p className="text-sm sm:text-base text-slate-800 dark:text-slate-200 leading-relaxed font-medium">
+                      {flashcards[currentCardIndex].back_solution}
+                    </p>
+                  </>
+                )}
               </div>
 
-              {/* Leitner Rating Buttons */}
-              <div className="grid grid-cols-3 gap-3 pt-2">
-                <Button
-                  onClick={() => handleRateFlashcard("not_understood")}
-                  variant="outline"
-                  className="border-rose-200 text-rose-700 hover:bg-rose-50 font-semibold text-xs"
-                >
-                  Need Review (1d)
-                </Button>
-                <Button
-                  onClick={() => handleRateFlashcard("uncertain")}
-                  variant="outline"
-                  className="border-amber-200 text-amber-700 hover:bg-amber-50 font-semibold text-xs"
-                >
-                  Uncertain (3d)
-                </Button>
-                <Button
-                  onClick={() => handleRateFlashcard("known")}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs"
-                >
-                  Mastered (7d)
-                </Button>
-              </div>
+              {isFlipped && (
+                <div className="grid grid-cols-3 gap-3 pt-2">
+                  <Button
+                    onClick={() => handleRateFlashcard("not_understood")}
+                    variant="outline"
+                    className="border-rose-300 text-rose-700 hover:bg-rose-50 text-xs"
+                  >
+                    Not Understood
+                  </Button>
+                  <Button
+                    onClick={() => handleRateFlashcard("uncertain")}
+                    variant="outline"
+                    className="border-amber-300 text-amber-700 hover:bg-amber-50 text-xs"
+                  >
+                    Uncertain
+                  </Button>
+                  <Button
+                    onClick={() => handleRateFlashcard("known")}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold"
+                  >
+                    Mastered (+5 XP)
+                  </Button>
+                </div>
+              )}
             </div>
           ) : (
             <Card className="text-center py-12">
-              <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto mb-3" />
-              <CardTitle className="text-lg font-bold text-slate-900">Sprint Completed!</CardTitle>
-              <CardDescription className="text-xs text-slate-500 mt-1">
-                All scheduled flashcards for today have been reviewed. Next intervals calculated via SM-2.
-              </CardDescription>
-              <Button onClick={loadFlashcards} className="mt-4 bg-indigo-600 font-bold" size="sm">
-                Refresh Deck
+              <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
+              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">All Flashcards Reviewed!</h3>
+              <p className="text-xs text-slate-500 mt-1 mb-4">You have reviewed all due cards for this session.</p>
+              <Button onClick={loadFlashcards} variant="outline" size="sm">
+                Restart Deck
               </Button>
             </Card>
           )}
@@ -715,13 +1150,13 @@ export default function LearnAndPlayPage() {
       )}
 
       {/* ============================================================= */}
-      {/* GAME E: ADAPTIVE CHALLENGE */}
+      {/* GAME G: ADAPTIVE CHALLENGE */}
       {/* ============================================================= */}
       {activeTab === "adaptive" && adaptiveData && (
         <div className="max-w-2xl mx-auto space-y-4">
           <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between mb-2">
                 <Badge variant="outline" className="capitalize text-xs font-bold text-indigo-700">
                   {adaptiveData.difficulty_selected} Challenge
                 </Badge>
@@ -729,21 +1164,27 @@ export default function LearnAndPlayPage() {
                   Topic Mastery: {Math.round(adaptiveData.current_mastery_score * 100)}%
                 </span>
               </div>
-              <CardTitle className="text-base font-bold text-slate-900">{adaptiveData.question.title}</CardTitle>
-              <CardDescription className="text-xs text-slate-600">{adaptiveData.pedagogical_reason}</CardDescription>
+              <CardTitle className="text-base font-bold text-slate-900 dark:text-slate-100">
+                {adaptiveData.question.title}
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-600 dark:text-slate-400">
+                {adaptiveData.pedagogical_reason}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm font-semibold text-slate-900">{adaptiveData.question.prompt}</p>
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {adaptiveData.question.prompt}
+              </p>
 
               <div className="space-y-2">
                 {adaptiveData.question.options.map((opt: string, idx: number) => (
                   <button
                     key={idx}
                     onClick={() => setAdaptiveSelectedOption(opt)}
-                    className={`w-full text-left p-3 rounded-lg text-xs font-medium border transition-all ${
+                    className={`w-full text-left p-3 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
                       adaptiveSelectedOption === opt
-                        ? "bg-indigo-50 border-indigo-500 text-indigo-900 font-bold ring-2 ring-indigo-500/20"
-                        : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                        ? "bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500 text-indigo-900 dark:text-indigo-200 font-bold ring-2 ring-indigo-500/20"
+                        : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50"
                     }`}
                   >
                     {opt}
@@ -752,7 +1193,7 @@ export default function LearnAndPlayPage() {
               </div>
 
               {adaptiveFeedback && (
-                <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-900">
+                <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 text-xs text-emerald-900 dark:text-emerald-200">
                   {adaptiveFeedback}
                 </div>
               )}
@@ -763,7 +1204,7 @@ export default function LearnAndPlayPage() {
                   disabled={!adaptiveSelectedOption}
                   className="bg-indigo-600 hover:bg-indigo-700 text-xs font-bold"
                 >
-                  Record Answer
+                  Record Answer (+20 XP)
                 </Button>
                 <Button onClick={loadAdaptiveChallenge} variant="outline" className="text-xs font-semibold">
                   Next Adaptive Item

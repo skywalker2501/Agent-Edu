@@ -719,3 +719,140 @@ async def get_adaptive_challenge_next(
             "difficulty": difficulty
         }
     }
+
+
+# =========================================================================
+# GAME F: CODE & CONCEPT WORD SCRAMBLE PUZZLE
+# =========================================================================
+
+class WordPuzzleSubmitRequest(BaseModel):
+    puzzle_id: str
+    solution_attempt: str
+    hints_used: int = 0
+
+
+PUZZLES = [
+    {
+        "id": "puz-1",
+        "scrambled": "RCEURISNO",
+        "answer": "RECURSION",
+        "category": "Algorithmic Paradigms",
+        "hint": "A programming technique where a function calls itself until a base condition is met."
+    },
+    {
+        "id": "puz-2",
+        "scrambled": "MMEIOAZOTIN",
+        "answer": "MEMOIZATION",
+        "category": "Dynamic Programming",
+        "hint": "Top-down caching of expensive recursive subproblem return values."
+    },
+    {
+        "id": "puz-3",
+        "scrambled": "POYLMROPHSIM",
+        "answer": "POLYMORPHISM",
+        "category": "Object-Oriented Design",
+        "hint": "The ability of an object to take on multiple forms via interfaces or method overriding."
+    },
+    {
+        "id": "puz-4",
+        "scrambled": "DIJKSTRAS",
+        "answer": "DIJKSTRA",
+        "category": "Graph Theory",
+        "hint": "Greedy shortest-path algorithm using a priority queue for non-negative edge weights."
+    },
+    {
+        "id": "puz-5",
+        "scrambled": "BAKCRACTIKNG",
+        "answer": "BACKTRACKING",
+        "category": "Search & Combinatorics",
+        "hint": "Algorithmic paradigm that tries candidate solutions incrementally and abandons failures."
+    }
+]
+
+
+@router.get("/puzzles")
+async def list_word_puzzles(
+    current_user: User = Depends(get_current_user)
+):
+    """Returns word scramble puzzles without leaking the raw answer string."""
+    return [
+        {
+            "id": p["id"],
+            "scrambled": p["scrambled"],
+            "category": p["category"],
+            "hint": p["hint"],
+            "length": len(p["answer"])
+        }
+        for p in PUZZLES
+    ]
+
+
+@router.post("/puzzles/submit")
+async def submit_word_puzzle(
+    payload: WordPuzzleSubmitRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Verifies puzzle solution, awards verified XP, and updates leaderboard."""
+    puzzle = next((p for p in PUZZLES if p["id"] == payload.puzzle_id), None)
+    if not puzzle:
+        raise HTTPException(status_code=404, detail="Puzzle not found")
+
+    is_correct = (payload.solution_attempt.strip().upper() == puzzle["answer"].upper())
+    xp_to_award = 0
+    if is_correct:
+        base_xp = 30
+        penalty = min(15, payload.hints_used * 5)
+        xp_to_award = max(10, base_xp - penalty)
+        idempotency = f"word_puzzle_{current_user.id}_{puzzle['id']}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M')}"
+        await GamificationService.award_xp(
+            db=db,
+            user_id=current_user.id,
+            amount=xp_to_award,
+            action_type="puzzle_solved",
+            idempotency_key=idempotency,
+            description=f"Solved Word Scramble: {puzzle['answer']}",
+            reference_id=puzzle["id"]
+        )
+
+    return {
+        "is_correct": is_correct,
+        "xp_awarded": xp_to_award,
+        "correct_answer": puzzle["answer"] if is_correct else None,
+        "explanation": puzzle["hint"]
+    }
+
+
+# =========================================================================
+# GAME G: SPEED COMPLEXITY & LOGIC QUICKFIRE
+# =========================================================================
+
+class QuickfireSubmitRequest(BaseModel):
+    score: int
+    correct_count: int
+    total_questions: int
+
+
+@router.post("/quickfire/submit")
+async def submit_quickfire(
+    payload: QuickfireSubmitRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Awards XP for Algorithmic Speed Quickfire round."""
+    xp = int(payload.correct_count * 12)
+    if xp > 0:
+        idempotency = f"quickfire_{current_user.id}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+        await GamificationService.award_xp(
+            db=db,
+            user_id=current_user.id,
+            amount=xp,
+            action_type="quickfire_completed",
+            idempotency_key=idempotency,
+            description=f"Speed Quickfire ({payload.correct_count}/{payload.total_questions} correct)"
+        )
+    return {
+        "status": "recorded",
+        "xp_awarded": xp,
+        "correct_count": payload.correct_count
+    }
