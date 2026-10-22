@@ -204,36 +204,127 @@ class AIService:
         ]
 
     @classmethod
+    async def _call_ollama(
+        cls,
+        system_prompt: str,
+        user_prompt: str,
+        conversation_history: Optional[List[Dict[str, str]]] = None,
+        temperature: float = 0.3
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Calls Ollama local inference service via HTTP REST endpoint.
+        Returns generated text or None if Ollama is unreachable.
+        """
+        base_url = getattr(settings, "OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
+        model_name = getattr(settings, "OLLAMA_MODEL", "llama3.2:3b")
+        timeout = getattr(settings, "OLLAMA_TIMEOUT_SECONDS", 30)
+
+        messages = [{"role": "system", "content": system_prompt}]
+        if conversation_history:
+            for msg in conversation_history[-6:]:
+                role = "assistant" if msg.get("role") in ["assistant", "tutor", "bot", "model"] else "user"
+                messages.append({"role": role, "content": msg.get("content", "")})
+        messages.append({"role": "user", "content": user_prompt})
+
+        payload = {
+            "model": model_name,
+            "messages": messages,
+            "stream": False,
+            "options": {
+                "temperature": temperature,
+            }
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=float(timeout)) as client:
+                resp = await client.post(f"{base_url}/api/chat", json=payload)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    msg = data.get("message", {})
+                    content = msg.get("content", "")
+                    if content:
+                        return {"text": content, "model": model_name, "provider": "ollama"}
+                else:
+                    logger.warning(f"Ollama returned HTTP {resp.status_code}: {resp.text[:200]}")
+        except httpx.ConnectError:
+            logger.info(f"Ollama daemon at {base_url} is not running or unreachable.")
+        except httpx.TimeoutException:
+            logger.warning(f"Ollama inference timed out after {timeout}s.")
+        except Exception as e:
+            logger.warning(f"Ollama inference error: {e}")
+        return None
+
+    @classmethod
     async def socratic_tutor_response(
         cls,
         topic_name: str,
         mode: str,
         student_message: str,
-        conversation_history: List[Dict[str, str]]
+        conversation_history: List[Dict[str, str]],
+        rag_context: Optional[List[Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
         """
         Generates Socratic tutoring responses without giving away the final answer immediately.
         Modes: 'explain', 'hint', 'worked_example', 'guide_step_by_step', 'test_understanding'.
+        Grounds responses with syllabus materials when provided.
         """
-        # Tier 1: Live Socratic Tutoring via Google Gemini API (Primary Engine)
-        gemini_key = getattr(settings, "GEMINI_API_KEY", None) or (settings.LLM_API_KEY if getattr(settings, "AI_PROVIDER", "") == "gemini" else None)
+        citations = []
+        grounding_section = ""
+        if rag_context:
+            grounding_lines = []
+            for item in rag_context[:3]:
+                if isinstance(item, dict):
+                    title = item.get("title", "Syllabus Guide")
+                    content = str(item.get("content", ""))[:350]
+                    section = item.get("concept_name") or topic_name
+                else:
+                    title = "Syllabus Guide"
+                    content = str(item)[:350]
+                    section = topic_name
+                grounding_lines.append(f"- [Resource: {title}]: {content}")
+                citations.append({
+                    "title": title,
+                    "section": section,
+                    "snippet": content[:120] + "..."
+                })
+            grounding_section = "\n\nAPPROVED SYLLABUS GROUNDING MATERIALS:\n" + "\n".join(grounding_lines) + "\nCite these materials using [Resource: <Title>] when providing explanations."
+
+        base_system_prompt = (
+            f"You are the AgentEdu Socratic AI Tutor for Computer Science and Data Structures & Algorithms. "
+            f"Current Topic: {topic_name}. Mode: {mode}.{grounding_section}\n"
+            "CRITICAL PEDAGOGICAL RULES:\n"
+            "1. Never give the complete final solution immediately.\n"
+            "2. Use Socratic questioning, guided decomposition, and progressive hint scaffolding.\n"
+            "3. Format your response strictly as JSON with exactly these keys:\n"
+            "   - \"content\": (string) The main conversational explanation, guided question, or step breakdown formatted in clear markdown.\n"
+            "   - \"hints\": (list of 2 to 3 strings) Progressive hint chips to guide the learner step-by-step.\n"
+            "   - \"code_snippet\": (string or null) A clean, educational scaffold or skeleton illustrating the concept, or null if code is not needed.\n"
+            "Respond with ONLY the raw JSON object, no introductory or trailing commentary."
+        )
+        user_prompt = f"Mode: {mode}. Topic: {topic_name}. Student says: {student_message}"
+
+        # Tier 1: Local Ollama Model (Primary Engine)
+        ollama_res = await cls._call_ollama(
+            system_prompt=base_system_prompt,
+            user_prompt=user_prompt,
+            conversation_history=conversation_history,
+            temperature=0.3
+        )
+        if ollama_res and ollama_res.get("text"):
+            parsed = cls._parse_tutor_llm_output(ollama_res["text"])
+            if parsed and parsed.get("content"):
+                parsed["model_name"] = ollama_res.get("model")
+                parsed["provider"] = "ollama"
+                parsed["is_fallback"] = False
+                parsed["citations"] = citations
+                return parsed
+
+        # Tier 2: Google Gemini API Fallback
+        gemini_key = getattr(settings, "GEMINI_API_KEY", None) or settings.LLM_API_KEY
         if gemini_key:
             try:
-                system_prompt = (
-                    f"You are the AgentEdu Socratic AI Tutor for Computer Science and Data Structures & Algorithms. "
-                    f"Current Topic: {topic_name}. Mode: {mode}.\n"
-                    "CRITICAL PEDAGOGICAL RULES:\n"
-                    "1. Never give the complete final solution immediately.\n"
-                    "2. Use Socratic questioning, guided decomposition, and progressive hint scaffolding.\n"
-                    "3. Format your response strictly as JSON with exactly these 3 keys:\n"
-                    "   - \"content\": (string) The main conversational explanation, guided question, or step breakdown formatted in clear markdown.\n"
-                    "   - \"hints\": (list of 2 to 3 strings) Progressive hint chips to guide the learner step-by-step.\n"
-                    "   - \"code_snippet\": (string or null) A clean, educational Python scaffold or skeleton illustrating the concept, or null if code is not needed.\n"
-                    "Respond with ONLY the raw JSON object, no introductory or trailing commentary."
-                )
-                user_prompt = f"Mode: {mode}. Topic: {topic_name}. Student says: {student_message}"
                 gemini_text = await cls._call_gemini(
-                    system_prompt=system_prompt,
+                    system_prompt=base_system_prompt,
                     user_prompt=user_prompt,
                     conversation_history=conversation_history,
                     temperature=0.3,
@@ -242,39 +333,34 @@ class AIService:
                 if gemini_text:
                     parsed = cls._parse_tutor_llm_output(gemini_text)
                     if parsed and parsed.get("content"):
+                        parsed["model_name"] = getattr(settings, "GEMINI_MODEL", "gemini-3.5-flash-lite")
+                        parsed["provider"] = "gemini"
+                        parsed["is_fallback"] = False
+                        parsed["citations"] = citations
                         return parsed
             except Exception as e:
-                logger.warning(f"Tutor Gemini API call failed, checking secondary provider: {e}")
+                logger.warning(f"Tutor Gemini API call failed: {e}")
 
-        # Tier 2: OpenRouter API Fallback
+        # Tier 3: OpenRouter API Fallback
         if settings.OPENROUTER_API_KEY:
             try:
-                system_prompt = (
-                    f"You are the AgentEdu Socratic AI Tutor for Computer Science and Data Structures & Algorithms. "
-                    f"Current Topic: {topic_name}. Mode: {mode}.\n"
-                    "CRITICAL PEDAGOGICAL RULES:\n"
-                    "1. Never give the complete final solution immediately.\n"
-                    "2. Use Socratic questioning, guided decomposition, and hint scaffolding.\n"
-                    "3. Format your response strictly as JSON with exactly these 3 keys:\n"
-                    "   - \"content\": (string) The main conversational explanation, guided question, or step breakdown formatted in clear markdown.\n"
-                    "   - \"hints\": (list of 2 to 3 strings) Progressive hint chips to guide the learner step-by-step.\n"
-                    "   - \"code_snippet\": (string or null) A clean, educational Python scaffold or skeleton illustrating the concept, or null if code is not needed.\n"
-                    "Respond with ONLY the raw JSON object, no extra introductory words."
-                )
-
-                messages = [{"role": "system", "content": system_prompt}]
+                messages = [{"role": "system", "content": base_system_prompt}]
                 for msg in conversation_history[-6:]:
                     role = "assistant" if msg.get("role") in ["assistant", "tutor", "bot"] else "user"
                     messages.append({"role": role, "content": msg.get("content", "")})
-                messages.append({"role": "user", "content": f"Mode: {mode}. Topic: {topic_name}. Student says: {student_message}"})
+                messages.append({"role": "user", "content": user_prompt})
 
                 raw_text = await cls._call_openrouter(messages=messages, temperature=0.3, max_tokens=2048)
                 if raw_text:
                     parsed = cls._parse_tutor_llm_output(raw_text)
                     if parsed and parsed.get("content"):
+                        parsed["model_name"] = settings.LLM_MODEL
+                        parsed["provider"] = "openrouter"
+                        parsed["is_fallback"] = False
+                        parsed["citations"] = citations
                         return parsed
             except Exception as e:
-                logger.warning(f"Tutor OpenRouter call failed, falling back to deterministic rules: {e}")
+                logger.warning(f"Tutor OpenRouter call failed: {e}")
 
         # Pedagogical rule-based fallback based on Topic and Mode
         msg_lower = student_message.lower()
@@ -382,20 +468,32 @@ class AIService:
                 return {
                     "content": "Quick concept check: What is the primary difference in execution between Top-Down Memoization and Bottom-Up Tabulation in Dynamic Programming?",
                     "hints": ["Consider recursion overhead versus iterative table filling."],
-                    "code_snippet": None
+                    "code_snippet": None,
+                    "model_name": "Socratic Knowledge Engine",
+                    "provider": "rule_based",
+                    "is_fallback": True,
+                    "citations": citations
                 }
             else:
                 return {
                     "content": "Quick concept check: In a recursive function, what happens if the recursive step never moves the argument closer to the base case?",
                     "hints": ["Think about memory allocations and the execution call stack."],
-                    "code_snippet": None
+                    "code_snippet": None,
+                    "model_name": "Socratic Knowledge Engine",
+                    "provider": "rule_based",
+                    "is_fallback": True,
+                    "citations": citations
                 }
 
         # Default 'explain' mode
         return {
             "content": f"In {topic_name}, the core concept revolves around systematic state transitions and invariant preservation. When solving problems in this area, ensure you understand both the prerequisite data structures and the exact asymptotic complexity. Which specific aspect feels most challenging right now?",
             "hints": ["You can switch to 'Worked Example' or 'Guided Hint' anytime using the selector above."],
-            "code_snippet": None
+            "code_snippet": None,
+            "model_name": "Socratic Knowledge Engine",
+            "provider": "rule_based",
+            "is_fallback": True,
+            "citations": citations
         }
 
     @classmethod

@@ -15,6 +15,8 @@ class TutorMessageResponse(BaseModel):
     content: str
     hints: Optional[List[str]] = None
     code_snippet: Optional[str] = None
+    citations: Optional[List[dict]] = None
+    model_name: Optional[str] = None
     created_at: datetime
 
     class Config:
@@ -52,6 +54,10 @@ class TutorChatResponse(BaseModel):
     content: Optional[str] = None
     hints: Optional[List[str]] = None
     code_snippet: Optional[str] = None
+    citations: Optional[List[dict]] = None
+    model_name: Optional[str] = None
+    provider: Optional[str] = "ollama"
+    is_fallback: bool = False
     suggested_followups: Optional[List[str]] = None
     conversation_id: Optional[str] = None
     mode: str

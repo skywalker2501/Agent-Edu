@@ -27,6 +27,9 @@ class UserUpdate(BaseModel):
 
 class UserResponse(UserBase):
     id: str
+    status: str = "active"
+    suspended_reason: Optional[str] = None
+    suspended_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
 

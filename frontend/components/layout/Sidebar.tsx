@@ -36,7 +36,9 @@ export function Sidebar() {
   // Student Links
   const studentNav = [
     { title: "Dashboard", href: "/student/dashboard", icon: LayoutDashboard },
-    { title: "My Classes", href: "/student/classes", icon: GraduationCap },
+    { title: "Syllabus Tree", href: "/student/syllabus", icon: BookOpen },
+    { title: "Learn & Play", href: "/student/games", icon: Sparkles },
+    { title: "Leaderboard", href: "/student/leaderboard", icon: Sliders },
     { title: "Assessments", href: "/student/assessments", icon: ClipboardList },
     { title: "Knowledge Map", href: "/student/knowledge-map", icon: Network },
     { title: "My Misconceptions", href: "/student/misconceptions", icon: BrainCircuit },

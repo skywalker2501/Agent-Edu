@@ -1,12 +1,13 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.core.exceptions import ResourceNotFoundError, PermissionDeniedError
 from app.models.ai_workflow import TutorConversation, TutorMessage, TutorMode
 from app.models.curriculum import Topic
+from app.models.audit import LearningResource
 from app.models.user import User
 from app.schemas.tutor import (
     TutorConversationResponse, TutorMessageResponse, TutorMessageRequest,
@@ -16,6 +17,23 @@ from app.services.ai_service import AIService
 from app.api.deps import get_current_user
 
 router = APIRouter(prefix="/ai-tutor", tags=["Socratic AI Tutor"])
+
+
+async def _get_rag_grounding_materials(db: AsyncSession, topic_id: Optional[str], topic_name: str) -> List[dict]:
+    """Retrieves approved syllabus materials for RAG grounding."""
+    try:
+        conditions = [LearningResource.is_approved == True]
+        if topic_id:
+            conditions.append(LearningResource.topic_id == topic_id)
+        else:
+            conditions.append(LearningResource.title.ilike(f"%{topic_name}%"))
+        
+        stmt = select(LearningResource).where(*conditions).limit(3)
+        res = await db.execute(stmt)
+        resources = res.scalars().all()
+        return [{"title": r.title, "content": r.content, "resource_type": r.resource_type} for r in resources]
+    except Exception:
+        return []
 
 
 @router.get("/conversations", response_model=List[TutorConversationResponse])
@@ -40,7 +58,6 @@ async def start_conversation(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Lookup topic name if topic_id provided
     topic_name = "Computer Science Foundations"
     if payload.topic_id:
         t_res = await db.execute(select(Topic).where(Topic.id == payload.topic_id))
@@ -57,7 +74,6 @@ async def start_conversation(
     db.add(convo)
     await db.flush()
 
-    # Add student message
     student_msg = TutorMessage(
         conversation_id=convo.id,
         sender="student",
@@ -65,12 +81,16 @@ async def start_conversation(
     )
     db.add(student_msg)
 
-    # Generate tutor response via AIService Socratic engine
+    # RAG grounding query
+    rag_context = await _get_rag_grounding_materials(db, payload.topic_id, topic_name)
+
+    # Generate tutor response via AIService Socratic engine (Ollama primary with Gemini/rule-based fallback)
     tutor_reply_dict = await AIService.socratic_tutor_response(
         topic_name=topic_name,
         mode=convo.mode,
         student_message=payload.content,
-        conversation_history=[]
+        conversation_history=[],
+        rag_context=rag_context
     )
 
     tutor_msg = TutorMessage(
@@ -78,12 +98,14 @@ async def start_conversation(
         sender="tutor",
         content=tutor_reply_dict.get("content", ""),
         hints=tutor_reply_dict.get("hints"),
-        code_snippet=tutor_reply_dict.get("code_snippet")
+        code_snippet=tutor_reply_dict.get("code_snippet"),
+        citations=tutor_reply_dict.get("citations"),
+        model_name=tutor_reply_dict.get("model_name"),
+        rag_sources=rag_context
     )
     db.add(tutor_msg)
     await db.commit()
 
-    # Re-fetch with messages
     stmt = (
         select(TutorConversation)
         .where(TutorConversation.id == convo.id)
@@ -92,6 +114,27 @@ async def start_conversation(
     res = await db.execute(stmt)
     refreshed = res.scalar_one()
     return TutorConversationResponse.model_validate(refreshed)
+
+
+@router.delete("/conversations/{conversation_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_conversation(
+    conversation_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Allows a student to delete their own conversation history."""
+    stmt = select(TutorConversation).where(TutorConversation.id == conversation_id)
+    res = await db.execute(stmt)
+    convo = res.scalar_one_or_none()
+    if not convo:
+        raise ResourceNotFoundError("TutorConversation", conversation_id)
+
+    if convo.student_id != current_user.id and current_user.role != "admin":
+        raise PermissionDeniedError("Cannot delete another user's conversation")
+
+    await db.delete(convo)
+    await db.commit()
+    return None
 
 
 @router.post("/conversations/{conversation_id}/messages", response_model=TutorMessageResponse)
@@ -117,7 +160,6 @@ async def send_message(
     if payload.mode:
         convo.mode = payload.mode
 
-    # Add student message
     st_msg = TutorMessage(
         conversation_id=convo.id,
         sender="student",
@@ -125,7 +167,6 @@ async def send_message(
     )
     db.add(st_msg)
 
-    # Lookup topic name
     topic_name = "Computer Science"
     if convo.topic_id:
         t_res = await db.execute(select(Topic).where(Topic.id == convo.topic_id))
@@ -133,13 +174,15 @@ async def send_message(
         if t:
             topic_name = t.name
 
-    history = [{"sender": m.sender, "content": m.content} for m in convo.messages]
+    history = [{"role": m.sender, "content": m.content} for m in convo.messages]
+    rag_context = await _get_rag_grounding_materials(db, convo.topic_id, topic_name)
 
     tutor_reply = await AIService.socratic_tutor_response(
         topic_name=topic_name,
         mode=convo.mode,
         student_message=payload.content,
-        conversation_history=history
+        conversation_history=history,
+        rag_context=rag_context
     )
 
     tutor_msg = TutorMessage(
@@ -147,7 +190,10 @@ async def send_message(
         sender="tutor",
         content=tutor_reply.get("content", ""),
         hints=tutor_reply.get("hints"),
-        code_snippet=tutor_reply.get("code_snippet")
+        code_snippet=tutor_reply.get("code_snippet"),
+        citations=tutor_reply.get("citations"),
+        model_name=tutor_reply.get("model_name"),
+        rag_sources=rag_context
     )
     db.add(tutor_msg)
     await db.commit()
@@ -164,15 +210,12 @@ async def tutor_chat(
 ):
     """
     Direct Socratic AI Tutor interactive chat endpoint.
-    Accepts student prompt, current learning mode, and target topic,
-    returning structured pedagogical scaffolding, progressive hints, and code snippets
-    powered by the OpenRouter AI model.
+    Powered by Ollama local LLM with configurable model and fallback chain.
     """
     topic_name = payload.topic or "Recursion & Data Structures"
     mode = payload.mode or "guide_step_by_step"
     student_text = payload.get_text()
 
-    # Load recent conversation history if conversation_id provided
     history = []
     if payload.conversation_id:
         try:
@@ -187,14 +230,21 @@ async def tutor_chat(
         except Exception:
             pass
 
+    rag_context = await _get_rag_grounding_materials(db, None, topic_name)
+
     tutor_reply = await AIService.socratic_tutor_response(
         topic_name=topic_name,
         mode=mode,
         student_message=student_text,
-        conversation_history=history
+        conversation_history=history,
+        rag_context=rag_context
     )
 
     content = tutor_reply.get("content", "Let's explore that step by step.")
+    model_name = tutor_reply.get("model_name", "llama3.2:3b")
+    provider = tutor_reply.get("provider", "ollama")
+    is_fallback = tutor_reply.get("is_fallback", False)
+    citations = tutor_reply.get("citations", [])
 
     suggested = [
         f"Give me a hint on {topic_name}",
@@ -208,9 +258,12 @@ async def tutor_chat(
         content=content,
         hints=tutor_reply.get("hints"),
         code_snippet=tutor_reply.get("code_snippet"),
+        citations=citations,
+        model_name=model_name,
+        provider=provider,
+        is_fallback=is_fallback,
         suggested_followups=suggested,
         conversation_id=payload.conversation_id,
         mode=mode,
         topic=topic_name
     )
-

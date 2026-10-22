@@ -105,6 +105,9 @@ class TutorMessage(Base):
     content = Column(Text, nullable=False)
     hints = Column(JSON, nullable=True)  # List of progressive hint strings
     code_snippet = Column(Text, nullable=True)
+    citations = Column(JSON, nullable=True)  # List of {source_title, section, snippet}
+    model_name = Column(String(100), nullable=True)  # Ollama model or fallback
+    rag_sources = Column(JSON, nullable=True)  # List of retrieved grounding document metadata
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relationships

@@ -1,7 +1,9 @@
 from app.core.database import Base
-from app.models.user import User, UserRole
+from app.models.user import User, UserRole, UserStatus
 from app.models.classroom import Class, ClassMembership
-from app.models.curriculum import Topic, Concept, TopicPrerequisite
+from app.models.curriculum import (
+    Course, Chapter, Topic, Concept, LearningObjective, TopicPrerequisite
+)
 from app.models.assessment import (
     Question, QuestionType, QuestionVersion,
     Assessment, AssessmentQuestion, AssessmentAttempt,
@@ -23,15 +25,26 @@ from app.models.ai_workflow import (
     TutorConversation, TutorMessage, TutorMode
 )
 from app.models.audit import AuditEvent, Notification, LearningResource
+from app.models.gamification import (
+    XPLedger, Achievement, UserAchievement, UserStreak
+)
+from app.models.games import (
+    GameType, GameStatus, GameSession, Flashcard,
+    UserFlashcardReview, CodeChallenge
+)
 
 __all__ = [
     "Base",
     "User",
     "UserRole",
+    "UserStatus",
     "Class",
     "ClassMembership",
+    "Course",
+    "Chapter",
     "Topic",
     "Concept",
+    "LearningObjective",
     "TopicPrerequisite",
     "Question",
     "QuestionType",
@@ -68,4 +81,14 @@ __all__ = [
     "AuditEvent",
     "Notification",
     "LearningResource",
+    "XPLedger",
+    "Achievement",
+    "UserAchievement",
+    "UserStreak",
+    "GameType",
+    "GameStatus",
+    "GameSession",
+    "Flashcard",
+    "UserFlashcardReview",
+    "CodeChallenge",
 ]

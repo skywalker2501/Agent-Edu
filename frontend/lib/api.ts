@@ -320,14 +320,130 @@ class ApiClient {
     });
   }
 
+  // --- Socratic AI Tutor History & Deletion ---
+  async deleteTutorConversation(id: string) {
+    return this.request<void>(`/ai-tutor/conversations/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  // --- Gamification & Leaderboards ---
+  async getGamificationProfile() {
+    return this.request<any>("/gamification/profile");
+  }
+
+  async getLeaderboard(timeframe: string = "all_time") {
+    return this.request<any>(`/gamification/leaderboard?timeframe=${timeframe}`);
+  }
+
+  // --- Interactive Learning Games ---
+  async startQuizBattle(topicId?: string, difficulty: string = "medium") {
+    return this.request<any>("/games/quiz-battle/start", {
+      method: "POST",
+      body: JSON.stringify({ topic_id: topicId, difficulty }),
+    });
+  }
+
+  async submitQuizBattle(sessionId: string, answers: Record<string, string>, timeTakenSeconds: number = 60) {
+    return this.request<any>("/games/quiz-battle/submit", {
+      method: "POST",
+      body: JSON.stringify({ session_id: sessionId, answers, time_taken_seconds: timeTakenSeconds }),
+    });
+  }
+
+  async getConceptMatch(topicId?: string) {
+    const q = topicId ? `?topic_id=${topicId}` : "";
+    return this.request<any>(`/games/concept-match${q}`);
+  }
+
+  async submitConceptMatch(pairsMatched: Array<{ term_id: string; def_id: string }>) {
+    return this.request<any>("/games/concept-match/submit", {
+      method: "POST",
+      body: JSON.stringify({ pairs_matched: pairsMatched }),
+    });
+  }
+
+  async getCodeChallenges(language?: string) {
+    const q = language ? `?language=${language}` : "";
+    return this.request<any[]>(`/games/code-quest/challenges${q}`);
+  }
+
+  async getCodeChallenge(slug: string) {
+    return this.request<any>(`/games/code-quest/challenges/${slug}`);
+  }
+
+  async executeCodeQuest(challengeSlug: string, code: string, language: string = "java") {
+    return this.request<any>("/games/code-quest/execute", {
+      method: "POST",
+      body: JSON.stringify({ challenge_slug: challengeSlug, code, language }),
+    });
+  }
+
+  async submitCodeQuest(challengeSlug: string, code: string, language: string = "java") {
+    return this.request<any>("/games/code-quest/submit", {
+      method: "POST",
+      body: JSON.stringify({ challenge_slug: challengeSlug, code, language }),
+    });
+  }
+
+  async getDueFlashcards(topicId?: string) {
+    const q = topicId ? `?topic_id=${topicId}` : "";
+    return this.request<any>(`/games/flashcards${q}`);
+  }
+
+  async reviewFlashcard(flashcardId: string, masteryRating: string) {
+    return this.request<any>("/games/flashcards/review", {
+      method: "POST",
+      body: JSON.stringify({ flashcard_id: flashcardId, mastery_rating: masteryRating }),
+    });
+  }
+
+  async getAdaptiveChallengeNext(topicId?: string) {
+    const q = topicId ? `?topic_id=${topicId}` : "";
+    return this.request<any>(`/games/adaptive-challenge/next${q}`);
+  }
+
+  // --- Syllabus & Course Hierarchy ---
+  async getCurriculumCourses() {
+    return this.request<any[]>("/curriculum/courses");
+  }
+
   // --- Admin ---
   async getAdminMetrics() {
     return this.request<any>("/admin/metrics");
   }
 
-  async getUsers(role?: string) {
-    const query = role ? `?role=${role}` : "";
+  async getUsers(role?: string, status?: string, search?: string) {
+    const params = new URLSearchParams();
+    if (role) params.set("role", role);
+    if (status) params.set("status", status);
+    if (search) params.set("search", search);
+    const query = params.toString() ? `?${params.toString()}` : "";
     return this.request<User[]>(`/admin/users${query}`);
+  }
+
+  async updateUserStatus(userId: string, status: string, reason?: string) {
+    return this.request<User>(`/admin/users/${userId}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status, reason }),
+    });
+  }
+
+  async updateUserRole(userId: string, role: string) {
+    return this.request<User>(`/admin/users/${userId}/role`, {
+      method: "PUT",
+      body: JSON.stringify({ role }),
+    });
+  }
+
+  async deleteUserAccount(userId: string) {
+    return this.request<any>(`/admin/users/${userId}`, {
+      method: "DELETE",
+    });
+  }
+
+  async getCourses() {
+    return this.request<any[]>("/curriculum/courses");
   }
 
   async getAuditTrail(action?: string) {

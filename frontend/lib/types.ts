@@ -5,6 +5,8 @@ export interface User {
   email: string;
   full_name: string;
   role: UserRole;
+  status?: "active" | "suspended" | "pending_deletion" | "deleted";
+  suspended_reason?: string | null;
   avatar_url?: string | null;
   created_at: string;
 }
@@ -371,6 +373,10 @@ export interface TutorMessage {
   teaching_mode?: TutorMode;
   hints?: string[];
   code_snippet?: string;
+  citations?: Array<{ title: string; section?: string; snippet?: string } | string>;
+  model_name?: string;
+  provider?: string;
+  is_fallback?: boolean;
   suggested_followups?: string[];
   created_at?: string;
 }
@@ -393,4 +399,92 @@ export interface StudentDashboardData {
   pending_interventions?: Intervention[];
   recent_events?: any[];
   mastery_summary?: Record<string, number>;
+}
+
+export interface GamificationProfile {
+  total_xp: number;
+  level: number;
+  level_title: string;
+  badge: string;
+  progress_pct: number;
+  xp_to_next_level: number;
+  current_streak: number;
+  longest_streak: number;
+  achievements: Array<{
+    code: string;
+    title: string;
+    description: string;
+    badge_icon: string;
+    category: string;
+    unlocked_at: string;
+  }>;
+  recent_xp: Array<{
+    amount: number;
+    description: string;
+    action_type: string;
+    created_at: string;
+  }>;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  user_id: string;
+  display_name: string;
+  xp: number;
+  level: number;
+  level_title: string;
+  is_current_user: boolean;
+}
+
+export interface LeaderboardResponse {
+  timeframe: string;
+  leaderboard: LeaderboardEntry[];
+  current_user_rank: number;
+  current_user_xp: number;
+  distance_to_next_rank: number;
+  total_participants: number;
+}
+
+export interface CodeChallenge {
+  id: string;
+  title: string;
+  slug: string;
+  language: string;
+  problem_statement: string;
+  initial_code?: string;
+  test_cases?: Array<{ input: any; expected: any }>;
+  hints?: string[];
+  difficulty: string;
+  xp_reward: number;
+}
+
+export interface Flashcard {
+  id: string;
+  front_prompt: string;
+  back_solution: string;
+  card_type: string;
+  difficulty: string;
+  interval_days?: number;
+  review_count?: number;
+}
+
+export interface CourseHierarchy {
+  id: string;
+  code: string;
+  title: string;
+  description?: string;
+  chapters: Array<{
+    id: string;
+    title: string;
+    order_index: number;
+    topics: Array<{
+      id: string;
+      code: string;
+      name: string;
+      category: string;
+      description?: string;
+      learning_objectives: Array<{ id: string; description: string; bloom_level: string }>;
+      concepts: Array<{ id: string; code: string; name: string; difficulty: string }>;
+    }>;
+  }>;
 }

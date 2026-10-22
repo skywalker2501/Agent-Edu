@@ -11,6 +11,13 @@ class UserRole(str):
     ADMIN = "admin"
 
 
+class UserStatus(str):
+    ACTIVE = "active"
+    SUSPENDED = "suspended"
+    PENDING_DELETION = "pending_deletion"
+    DELETED = "deleted"
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -19,7 +26,11 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=False)
     role = Column(String(50), nullable=False, default=UserRole.STUDENT, index=True)
+    status = Column(String(50), nullable=False, default=UserStatus.ACTIVE, index=True)
     avatar_url = Column(String(500), nullable=True)
+    suspended_reason = Column(String(500), nullable=True)
+    suspended_at = Column(DateTime(timezone=True), nullable=True)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
     
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)

@@ -35,9 +35,11 @@ async def get_current_user(
             "admin@agentedu.org"
         )
         stmt = select(User).where(User.email == email)
-        result = await db.execute(stmt)
-        user = result.scalar_one_or_none()
         if user:
+            if getattr(user, "status", None) == "suspended":
+                raise PermissionDeniedError(f"Account is suspended: {user.suspended_reason or 'Access restricted by administrator.'}")
+            if getattr(user, "status", None) == "deleted":
+                raise AuthenticationError("This account has been deleted.")
             return user
 
     payload = decode_access_token(token)
@@ -53,7 +55,12 @@ async def get_current_user(
     user = result.scalar_one_or_none()
 
     if not user:
-        raise AuthenticationError("User not found or credentials revoked")
+        raise AuthenticationError("User account not found")
+
+    if getattr(user, "status", None) == "suspended":
+        raise PermissionDeniedError(f"Account is suspended: {user.suspended_reason or 'Access restricted by administrator.'}")
+    if getattr(user, "status", None) == "deleted":
+        raise AuthenticationError("This account has been deleted.")
 
     return user
 

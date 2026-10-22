@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
-import { StudentDashboardData, LearnerState, Intervention } from "@/lib/types";
+import { StudentDashboardData, LearnerState, Intervention, GamificationProfile } from "@/lib/types";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,13 @@ import {
   Play,
   RotateCcw,
   Target,
-  GraduationCap
+  GraduationCap,
+  Flame,
+  Trophy,
+  Award,
+  Gamepad2,
+  ShieldCheck,
+  ChevronRight
 } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
@@ -29,22 +35,27 @@ export default function StudentDashboardPage() {
   const { user } = useAuth();
   const [dashboardData, setDashboardData] = useState<StudentDashboardData | null>(null);
   const [learnerModel, setLearnerModel] = useState<LearnerState | null>(null);
+  const [gamification, setGamification] = useState<GamificationProfile | null>(null);
   const [pendingInterventions, setPendingInterventions] = useState<Intervention[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [dash, model, interv] = await Promise.allSettled([
+        const [dash, model, interv, gameProfile] = await Promise.allSettled([
           api.getStudentDashboard(),
           api.getLearnerModel(),
           api.getStudentInterventions(),
+          api.getGamificationProfile(),
         ]);
 
         if (dash.status === "fulfilled") setDashboardData(dash.value);
         if (model.status === "fulfilled") setLearnerModel(model.value);
         if (interv.status === "fulfilled") {
           setPendingInterventions(interv.value.filter(i => i.status === "approved" || i.status === "in_progress"));
+        }
+        if (gameProfile.status === "fulfilled") {
+          setGamification(gameProfile.value);
         }
       } catch (err) {
         console.error("Error loading dashboard data:", err);
@@ -89,17 +100,28 @@ export default function StudentDashboardPage() {
               <Sparkles className="w-3.5 h-3.5 text-indigo-300" />
               Agentic Closed-Loop Engine Active
             </span>
+            {gamification && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/30 text-amber-200 border border-amber-400/30">
+                <Flame className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                {gamification.current_streak} Day Streak
+              </span>
+            )}
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">
             Welcome back, {user?.full_name || "Student"}!
           </h1>
           <p className="text-indigo-100/90 text-sm sm:text-base leading-relaxed mb-6">
-            Your Learner Digital Twin is continually tracking conceptual dependencies. You currently have an approved targeted intervention ready to help strengthen your mental model of <span className="font-semibold text-white">Call Stack Execution in Recursion</span>.
+            Your Learner Digital Twin continuously monitors conceptual dependencies. Continue working on your approved interventions, syllabus challenges, and Socratic tutoring sessions.
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <Link href="/student/interventions">
               <Button size="lg" className="bg-white text-indigo-900 hover:bg-indigo-50 font-semibold shadow-md">
-                <Play className="w-4 h-4 mr-1.5 fill-indigo-900" /> Start Approved Intervention
+                <Play className="w-4 h-4 mr-1.5 fill-indigo-900" /> Continue Learning
+              </Button>
+            </Link>
+            <Link href="/student/games">
+              <Button size="lg" className="bg-indigo-700/80 hover:bg-indigo-700 text-white border border-indigo-400/30 font-semibold shadow-md">
+                <Sparkles className="w-4 h-4 mr-1.5 text-amber-300" /> Learn & Play Hub
               </Button>
             </Link>
             <Link href="/student/ai-tutor">
@@ -109,9 +131,48 @@ export default function StudentDashboardPage() {
             </Link>
           </div>
         </div>
-        {/* Subtle decorative ring */}
         <div className="absolute right-0 top-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
       </div>
+
+      {/* Gamification Progress & Level Bar */}
+      {gamification && (
+        <Card className="border-indigo-100 bg-gradient-to-r from-slate-50 via-indigo-50/40 to-slate-50">
+          <CardContent className="p-5">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-300 flex items-center justify-center text-amber-600 font-extrabold text-lg shadow-sm">
+                  <Award className="w-6 h-6 text-amber-600" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Level {gamification.level}</span>
+                    <Badge variant="outline" className="bg-white text-indigo-700 border-indigo-200 text-xs font-semibold">
+                      {gamification.level_title}
+                    </Badge>
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900">
+                    {gamification.total_xp.toLocaleString()} <span className="text-xs text-slate-500 font-medium">Total XP Points</span>
+                  </h3>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                <Link href="/student/leaderboard">
+                  <Button variant="outline" size="sm" className="bg-white text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50">
+                    <Trophy className="w-3.5 h-3.5 mr-1.5 text-amber-500" /> View Leaderboard
+                  </Button>
+                </Link>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs font-medium text-slate-600">
+                <span>Progress to next rank</span>
+                <span>{gamification.xp_to_next_level > 0 ? `${gamification.xp_to_next_level} XP remaining` : "Top Level Reached"}</span>
+              </div>
+              <Progress value={gamification.progress_pct} className="h-2.5 bg-slate-200" />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Closed-Loop Workflow Status Indicator */}
       <Card className="border-indigo-100 bg-white">
@@ -203,170 +264,218 @@ export default function StudentDashboardPage() {
 
         <Card>
           <CardContent className="p-5 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
+            <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
               <TrendingUp className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-xs text-slate-500 font-medium">Remediation Delta</p>
-              <h3 className="text-2xl font-bold text-slate-900">+38%</h3>
-              <p className="text-[11px] text-blue-600 font-medium">Expected on Reassessment</p>
+              <p className="text-xs text-slate-500 font-medium">Average Mastery</p>
+              <h3 className="text-2xl font-bold text-slate-900">
+                {Math.round(masteryData.reduce((acc, m) => acc + m.mastery, 0) / masteryData.length)}%
+              </h3>
+              <p className="text-[11px] text-emerald-600 font-medium">Top 15% in cohort</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Main Grid: Topic Mastery Cards & Mastery Analytics */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Topic Mastery Cards */}
-        <div className="lg:col-span-2 space-y-4">
+      {/* Main Dashboard Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left 2 Cols: Mastery Breakdown & Actions */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Syllabus Topic Mastery Chart */}
           <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-base font-bold text-slate-900">
-                    Topic Mastery Estimates
-                  </CardTitle>
-                  <CardDescription>
-                    Derived transparently from assessment responses and error patterns
-                  </CardDescription>
-                </div>
-                <Link href="/student/knowledge-map" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
-                  View Knowledge Map <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <div>
+                <CardTitle className="text-lg font-bold text-slate-900">Topic Mastery Breakdown</CardTitle>
+                <CardDescription className="text-xs text-slate-500">
+                  Real-time cognitive diagnosis across DSA syllabus modules
+                </CardDescription>
               </div>
+              <Link href="/student/knowledge-map">
+                <Button variant="ghost" size="sm" className="text-xs text-indigo-600 hover:text-indigo-700">
+                  View Map <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                </Button>
+              </Link>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {masteryData.map((item) => (
-                <div key={item.topic} className="p-3.5 rounded-xl border border-slate-100 hover:border-slate-200 bg-slate-50/50 transition">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-semibold text-sm text-slate-900">{item.topic}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-700">{item.mastery}%</span>
+            <CardContent>
+              <div className="h-64 w-full pt-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={masteryData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+                    <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11, fill: "#64748b" }} unit="%" />
+                    <YAxis dataKey="topic" type="category" tick={{ fontSize: 11, fill: "#334155" }} width={140} />
+                    <Tooltip
+                      formatter={(val: any) => [`${val}%`, "Estimated Mastery"]}
+                      contentStyle={{ backgroundColor: "#0f172a", borderRadius: "8px", color: "#fff", fontSize: "12px" }}
+                    />
+                    <Bar dataKey="mastery" fill="#4f46e5" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Topic Progress Items */}
+              <div className="mt-6 divide-y divide-slate-100">
+                {masteryData.map((item, idx) => (
+                  <div key={idx} className="py-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{item.topic}</p>
+                      <p className="text-xs text-slate-400">Target confidence: 85%</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-24 text-right font-bold text-sm text-slate-700">
+                        {item.mastery}%
+                      </div>
                       {getStatusBadge(item.mastery)}
                     </div>
                   </div>
-                  <Progress value={item.mastery} className="h-2" />
-                  {item.mastery < 60 && (
-                    <div className="mt-2 text-[11px] text-amber-700 bg-amber-50 p-2 rounded border border-amber-200 flex items-center justify-between">
-                      <span>Root cause: stack frame return values not unwinding correctly.</span>
-                      <Link href="/student/interventions" className="font-bold underline text-amber-800">
-                        Remediate
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              ))}
+                ))}
+              </div>
             </CardContent>
           </Card>
 
-          {/* Graphical Analytics Chart */}
+          {/* Quick Games & Activities Launch */}
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-bold text-slate-900">
-                Mastery Profile (BKT / Cognitive Model)
+            <CardHeader>
+              <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <Gamepad2 className="w-5 h-5 text-indigo-600" />
+                Play & Practice Activities
               </CardTitle>
-              <CardDescription>
-                Evidence-grounded mastery scores across the computer science syllabus
+              <CardDescription className="text-xs text-slate-500">
+                Earn verified XP and sharpen core concepts through syllabus-linked learning games
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={masteryData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="topic" tick={{ fontSize: 12, fill: "#64748b" }} />
-                    <YAxis domain={[0, 100]} tick={{ fontSize: 12, fill: "#64748b" }} />
-                    <Tooltip
-                      formatter={(val: any) => [`${val}%`, "Mastery"]}
-                      contentStyle={{ borderRadius: "8px", border: "1px solid #e2e8f0" }}
-                    />
-                    <Bar dataKey="mastery" fill="#4f46e5" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Link href="/student/games?tab=quiz-battle" className="p-4 rounded-xl border border-indigo-100 bg-indigo-50/40 hover:bg-indigo-50 transition-colors group">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center mb-2 shadow-sm">
+                    <Trophy className="w-4 h-4" />
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 flex items-center justify-between">
+                    Quiz Battle
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-1">Timed syllabus challenge (+50 XP)</p>
+                </Link>
+
+                <Link href="/student/games?tab=code-quest" className="p-4 rounded-xl border border-emerald-100 bg-emerald-50/40 hover:bg-emerald-50 transition-colors group">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center mb-2 shadow-sm">
+                    <Play className="w-4 h-4 fill-white" />
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-900 group-hover:text-emerald-600 flex items-center justify-between">
+                    Code Quest
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-1">Java & Python programming (+70 XP)</p>
+                </Link>
+
+                <Link href="/student/games?tab=flashcards" className="p-4 rounded-xl border border-amber-100 bg-amber-50/40 hover:bg-amber-50 transition-colors group">
+                  <div className="w-8 h-8 rounded-lg bg-amber-600 text-white flex items-center justify-center mb-2 shadow-sm">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-900 group-hover:text-amber-600 flex items-center justify-between">
+                    Flashcard Sprint
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-1">Spaced repetition memory practice</p>
+                </Link>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Right Column: Pending Interventions & Quick Actions */}
+        {/* Right Col: Active Interventions & Recommendations */}
         <div className="space-y-6">
-          {/* Active Intervention Card */}
-          <Card className="border-indigo-200 bg-gradient-to-b from-indigo-50/50 to-white">
+          {/* Active Interventions Card */}
+          <Card className="border-indigo-100">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <Badge variant="confirmed" className="text-[10px] font-bold uppercase">
-                  Teacher Approved
+                <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  Prescribed Interventions
+                </CardTitle>
+                <Badge variant="outline" className="text-xs">
+                  {pendingInterventions.length} Ready
                 </Badge>
-                <span className="text-[11px] text-slate-500 flex items-center gap-1">
-                  <Clock className="w-3 h-3" /> 15 mins
-                </span>
               </div>
-              <CardTitle className="text-base font-bold text-slate-900 mt-2">
-                Call Stack Execution in Recursion
-              </CardTitle>
-              <CardDescription>
-                Strategy: Worked Example & Step-by-Step Call Stack Visualization
+              <CardDescription className="text-xs text-slate-500">
+                Teacher-approved remediation tasks
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Designed to remedy the misconception where recursive returns overwrite rather than accumulate into prior stack frames.
-              </p>
-              <div className="p-3 bg-white rounded-lg border border-indigo-100 text-xs space-y-1.5">
-                <div className="flex justify-between text-slate-600 font-medium">
-                  <span>Confidence Rating:</span>
-                  <span className="font-bold text-slate-900">89%</span>
-                </div>
-                <div className="flex justify-between text-slate-600 font-medium">
-                  <span>Authorized by:</span>
-                  <span className="font-bold text-slate-900">Dr. Alan Turing</span>
-                </div>
-              </div>
-              <Link href="/student/interventions" className="block pt-1">
-                <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold">
-                  <Play className="w-4 h-4 mr-1.5" /> Launch Activity Player
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          {/* Available Assessments */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-bold text-slate-900">
-                Assigned Quizzes
-              </CardTitle>
-              <CardDescription>
-                Diagnostic checks and follow-up reassessments
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="p-3 rounded-lg border border-slate-200 bg-white hover:border-slate-300 transition">
-                <div className="flex items-center justify-between mb-1">
-                  <h4 className="text-xs font-bold text-slate-900">Recursion & Call Stack Diagnostic</h4>
-                  <Badge variant="developing" className="text-[10px]">Baseline</Badge>
-                </div>
-                <p className="text-[11px] text-slate-500 mb-2">3 Questions • 20 Minutes • Automated Grading</p>
+              <div className="p-3.5 rounded-xl border border-indigo-100 bg-indigo-50/50 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-slate-700">Attempted (Score: 40%)</span>
-                  <Link href="/student/assessments" className="text-xs text-indigo-600 font-semibold hover:underline">
-                    View Feedback
+                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    Worked Example
+                  </span>
+                  <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" /> 15 mins
+                  </span>
+                </div>
+                <h4 className="text-sm font-bold text-slate-900">
+                  Recursive Call Stack Execution Diagram
+                </h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Traces frame allocations and return paths for Factorial & Fibonacci to resolve frame exhaustion.
+                </p>
+                <div className="pt-1 flex items-center justify-between">
+                  <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5" /> Approved by Dr. Aris
+                  </span>
+                  <Link href="/student/interventions">
+                    <Button size="sm" className="h-7 text-xs bg-indigo-600 hover:bg-indigo-700">
+                      Launch
+                    </Button>
                   </Link>
                 </div>
               </div>
 
-              <div className="p-3 rounded-lg border border-slate-200 bg-white hover:border-slate-300 transition">
-                <div className="flex items-center justify-between mb-1">
-                  <h4 className="text-xs font-bold text-slate-900">Post-Intervention Reassessment</h4>
-                  <Badge variant="mastered" className="text-[10px]">Follow-Up</Badge>
+              <div className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/50 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-700 bg-slate-200 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    Guided Practice
+                  </span>
+                  <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" /> 20 mins
+                  </span>
                 </div>
-                <p className="text-[11px] text-slate-500 mb-2">Measure efficacy after completing intervention</p>
-                <Link href="/student/assessments">
-                  <Button variant="outline" size="sm" className="w-full text-xs">
-                    Take Reassessment
-                  </Button>
-                </Link>
+                <h4 className="text-sm font-bold text-slate-900">
+                  Two-Pointer Boundary Edge Cases
+                </h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Interactive practice focusing on array bounds and pointer convergence invariants.
+                </p>
+                <div className="pt-1 flex items-center justify-between">
+                  <span className="text-[11px] text-slate-500 font-medium">Pending Teacher Review</span>
+                  <Link href="/student/interventions">
+                    <Button size="sm" variant="outline" className="h-7 text-xs">
+                      View Status
+                    </Button>
+                  </Link>
+                </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Socratic Tutor Mini Prompt */}
+          <Card className="bg-gradient-to-br from-slate-900 to-indigo-950 text-white border-none shadow-md">
+            <CardContent className="p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+                  <BrainCircuit className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white">Socratic AI Tutor</h4>
+                  <p className="text-[11px] text-indigo-300">Grounded in DSA Syllabus</p>
+                </div>
+              </div>
+              <p className="text-xs text-indigo-100/90 leading-relaxed">
+                Stuck on a homework problem or algorithm? Get guided hints without having the full answer spoiled.
+              </p>
+              <Link href="/student/ai-tutor" className="block pt-1">
+                <Button className="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">
+                  Ask a Socratic Question
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>

@@ -36,11 +36,16 @@ class Settings(BaseSettings):
         description="Kaggle API token for dataset downloading"
     )
 
-    # LLM / AI Configuration (Google Gemini & Multi-Provider Support)
-    AI_PROVIDER: str = Field(default="gemini", description="gemini, openrouter, openai, anthropic, or rule_based_fallback")
+    # Ollama Local LLM Configuration (Primary inference provider for Socratic AI Tutor)
+    OLLAMA_BASE_URL: str = Field(default="http://localhost:11434", description="Ollama local/remote daemon URL")
+    OLLAMA_MODEL: str = Field(default="llama3.2:3b", description="Default Ollama instruct model (e.g., llama3.2:3b, qwen2.5-coder:3b)")
+    OLLAMA_TIMEOUT_SECONDS: int = Field(default=30, description="Request timeout for Ollama inference")
+
+    # LLM / AI Configuration (Ollama, Google Gemini, OpenRouter & Multi-Provider Support)
+    AI_PROVIDER: str = Field(default="ollama", description="ollama, gemini, openrouter, openai, anthropic, or rule_based_fallback")
     GEMINI_API_KEY: Optional[str] = Field(
         default=None,
-        description="Google Gemini API key"
+        description="Google Gemini API key (fallback or cloud provider)"
     )
     GEMINI_MODEL: str = Field(default="gemini-3.5-flash-lite", description="Primary Google Gemini model")
     GEMINI_FALLBACK_MODEL: str = Field(default="gemini-3.8-flash", description="Fallback Google Gemini model")
