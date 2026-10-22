@@ -52,7 +52,55 @@ const FALLBACK_USERS: LeaderboardEntry[] = [
   { user_id: "u7", rank: 7, display_name: "Sneha R.", total_xp: 310, level: 1, streak_days: 1 },
 ];
 
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: string | null;
+}
+class LeaderboardErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error: error?.message || "Render error occurred." };
+  }
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error("LeaderboardErrorBoundary caught error:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="max-w-4xl mx-auto p-8 text-center bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800 rounded-2xl shadow-sm">
+          <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
+          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-1">Leaderboard View Restored</h3>
+          <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto mb-4">
+            A temporary display notice occurred. Click below to refresh the verified academic standings.
+          </p>
+          <Button
+            onClick={() => this.setState({ hasError: false, error: null })}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold"
+          >
+            <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Refresh Leaderboard
+          </Button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function LeaderboardPage() {
+  return (
+    <LeaderboardErrorBoundary>
+      <LeaderboardContent />
+    </LeaderboardErrorBoundary>
+  );
+}
+
+function LeaderboardContent() {
   const { user: authUser } = useAuth();
   const [timeframe, setTimeframe] = useState<"weekly" | "monthly" | "all_time">("all_time");
   const [data, setData] = useState<LeaderboardData>({
@@ -86,13 +134,14 @@ export default function LeaderboardPage() {
 
         const myRank = Number(res.current_user_rank ?? res.my_rank ?? 3);
         const sourceList = rawList.length > 0 ? rawList : FALLBACK_USERS;
+        const firstWord = authUser?.full_name ? String(authUser.full_name).trim().split(/\s+/)[0]?.toLowerCase() : "";
 
         const normalizedUsers: LeaderboardEntry[] = sourceList.map((u: any, idx: number) => {
           const rank = Number(u.rank ?? idx + 1);
           const isCurrentUser = Boolean(
             u.is_current_user ||
             (authUser?.id && (u.user_id === authUser.id || u.id === authUser.id)) ||
-            (authUser?.full_name && String(u.display_name).toLowerCase().includes(authUser.full_name.split(" ")[0].toLowerCase())) ||
+            (firstWord && String(u.display_name || "").toLowerCase().includes(firstWord)) ||
             (rank === myRank && !sourceList.some((other: any) => other.is_current_user))
           );
 
@@ -205,15 +254,15 @@ export default function LeaderboardPage() {
                   </Badge>
                 </div>
                 <p className="text-xs text-indigo-200/80 mt-0.5 flex items-center gap-2">
-                  <span>{(data?.my_xp || 680).toLocaleString()} Verified XP</span>
+                  <span>{(data?.my_xp ?? 0).toLocaleString()} Verified XP</span>
                   <span>•</span>
-                  <span>Level 3 Scholar</span>
+                  <span>Level {Math.max(1, Math.min(5, Math.floor((data?.my_xp ?? 0) / 300) + 1))} Scholar</span>
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              {data?.distance_to_next_rank && data.distance_to_next_rank > 0 && (
+              {Boolean(data?.distance_to_next_rank && data.distance_to_next_rank > 0) && (
                 <div className="bg-slate-900/60 backdrop-blur-xs px-3.5 py-2 rounded-xl border border-indigo-700/40 text-xs">
                   <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Gap to Rank #{data.next_rank || 2}</span>
                   <span className="font-extrabold text-amber-400 flex items-center gap-1 mt-0.5">
@@ -325,11 +374,15 @@ export default function LeaderboardPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {usersList.map((user) => {
-                const isMe = user.is_current_user || user.user_id === "u3" || user.display_name.includes("You");
+              {usersList.map((user, idx) => {
+                const isMe = Boolean(
+                  user.is_current_user ||
+                  (authUser?.id && (user.user_id === authUser.id || user.user_id === `peer-${authUser.id}`)) ||
+                  String(user.display_name || "").includes("You")
+                );
                 return (
                   <tr
-                    key={user.user_id}
+                    key={user.user_id || `user-row-${idx}`}
                     className={`transition ${
                       isMe
                         ? "bg-indigo-50/80 dark:bg-indigo-950/40 font-semibold"

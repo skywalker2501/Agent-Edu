@@ -119,7 +119,13 @@ export function Sidebar() {
   ];
 
   const currentGroups =
-    role === "teacher"
+    pathname.startsWith("/admin")
+      ? adminGroups
+      : pathname.startsWith("/teacher")
+      ? teacherGroups
+      : pathname.startsWith("/student")
+      ? studentGroups
+      : role === "teacher"
       ? teacherGroups
       : role === "admin"
       ? adminGroups

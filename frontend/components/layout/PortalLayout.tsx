@@ -27,16 +27,18 @@ export function PortalLayout({ children, allowedRoles }: PortalLayoutProps) {
   useEffect(() => {
     if (!isLoading && !user) {
       let targetRole: "student_rahul" | "student_priya" | "teacher" | "admin" = "student_rahul";
-      if (allowedRoles?.includes("admin")) {
+      if (pathname.startsWith("/admin")) {
         targetRole = "admin";
-      } else if (allowedRoles?.includes("teacher")) {
+      } else if (pathname.startsWith("/teacher")) {
         targetRole = "teacher";
+      } else {
+        targetRole = "student_rahul";
       }
       loginAsDemo(targetRole).catch(() => {
         window.location.href = "/auth/login";
       });
     }
-  }, [user, isLoading, rolesKey]);
+  }, [user, isLoading, pathname]);
 
   // Auto-switch demo persona seamlessly when navigating to portal with specific role requirement
   useEffect(() => {
@@ -50,10 +52,12 @@ export function PortalLayout({ children, allowedRoles }: PortalLayoutProps) {
 
       if (isDemoUser) {
         let targetDemo: "student_rahul" | "teacher" | "admin" = "student_rahul";
-        if (allowedRoles.includes("admin")) {
+        if (pathname.startsWith("/admin") || allowedRoles.includes("admin")) {
           targetDemo = "admin";
-        } else if (allowedRoles.includes("teacher")) {
+        } else if (pathname.startsWith("/teacher") || allowedRoles.includes("teacher")) {
           targetDemo = "teacher";
+        } else {
+          targetDemo = "student_rahul";
         }
         setIsSwitching(true);
         loginAsDemo(targetDemo)
