@@ -116,7 +116,7 @@ export default function StudentDashboardPage() {
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-              Welcome back, {user?.full_name?.split(" ")[0] || "Rahul"}
+              Welcome back, {(user?.full_name ? String(user.full_name).trim().split(/\s+/)[0] : "Rahul") || "Rahul"}
             </h1>
             <p className="text-slate-300 text-xs sm:text-sm leading-relaxed max-w-xl">
               Your autonomous learner model detected strong progress in linear memory structures. Next goal: eliminate the LIFO unwind misconception in recursive call stacks.

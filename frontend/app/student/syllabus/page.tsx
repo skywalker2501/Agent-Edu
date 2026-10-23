@@ -175,7 +175,7 @@ export default function SyllabusPage() {
   };
 
   const getBloomBadgeVariant = (level: string) => {
-    switch (level.toLowerCase()) {
+    switch (String(level || "").toLowerCase()) {
       case "remember":
       case "understand":
         return "secondary";
@@ -308,13 +308,14 @@ export default function SyllabusPage() {
 
                             {/* Learning Objectives & Concepts Drawer */}
                             {isTopExpanded && (() => {
-                              const effectiveObjectives = (topic.learning_objectives && topic.learning_objectives.length > 0)
-                                ? topic.learning_objectives
-                                : [
-                                    { id: `${topic.id}-lo-1`, description: `Understand and explain memory layout, pointer mechanics, and invariants of ${topic.name}.`, bloom_level: "Understand" },
-                                    { id: `${topic.id}-lo-2`, description: `Apply problem-solving algorithmic techniques and traversal patterns to ${topic.name.toLowerCase()} challenges.`, bloom_level: "Apply" },
-                                    { id: `${topic.id}-lo-3`, description: `Analyze time and space complexity, trade-offs, and edge case boundary conditions.`, bloom_level: "Analyze" },
-                                  ];
+                              const topicName = String(topic?.name || "Topic");
+                                const effectiveObjectives = (topic.learning_objectives && topic.learning_objectives.length > 0)
+                                  ? topic.learning_objectives
+                                  : [
+                                      { id: `${topic.id}-lo-1`, description: `Understand and explain memory layout, pointer mechanics, and invariants of ${topicName}.`, bloom_level: "Understand" },
+                                      { id: `${topic.id}-lo-2`, description: `Apply problem-solving algorithmic techniques and traversal patterns to ${topicName.toLowerCase()} challenges.`, bloom_level: "Apply" },
+                                      { id: `${topic.id}-lo-3`, description: `Analyze time and space complexity, trade-offs, and edge case boundary conditions.`, bloom_level: "Analyze" },
+                                    ];
 
                               return (
                                 <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 pl-4 sm:pl-6 space-y-3">

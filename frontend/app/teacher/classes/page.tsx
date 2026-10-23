@@ -73,7 +73,7 @@ export default function TeacherClassesPage() {
     setError(null);
     try {
       const data = await api.getClasses();
-      setClasses(data);
+      setClasses(Array.isArray(data) ? data : []);
     } catch (e: any) {
       setError(e?.message || "Failed to load classes");
     } finally {
@@ -94,7 +94,7 @@ export default function TeacherClassesPage() {
     setAddError(null);
     try {
       const data = await (api as any).getEnrolledStudents(classId);
-      setRoster(data);
+      setRoster(Array.isArray(data) ? data : []);
     } catch {
       setRoster([]);
     } finally {

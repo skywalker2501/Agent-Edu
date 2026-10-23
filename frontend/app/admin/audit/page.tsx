@@ -28,19 +28,21 @@ export default function AdminAuditPage() {
     { id: "ae7", event_type: "reassessment_completed", description: "Post-intervention reassessment score: 78% (delta +38%)", timestamp: "Today at 10:45 AM", actor: "Rahul Gupta" },
   ];
 
+  const query = (search || "").toLowerCase().trim();
   const filtered = displayEvents.filter(
     (e) =>
-      (e.description || "").toLowerCase().includes(search.toLowerCase()) ||
-      (e.event_type || "").toLowerCase().includes(search.toLowerCase())
+      String(e.description || "").toLowerCase().includes(query) ||
+      String(e.event_type || "").toLowerCase().includes(query) ||
+      String(e.actor || "").toLowerCase().includes(query)
   );
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-          <ShieldAlert className="w-6 h-6 text-indigo-600" /> Full Audit Trail
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+          <ShieldAlert className="w-6 h-6 text-indigo-600 dark:text-cyan-400" /> Full Audit Trail
         </h1>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Immutable, searchable log of every system event, user action, and AI agent operation.
         </p>
       </div>
@@ -51,28 +53,28 @@ export default function AdminAuditPage() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search audit events..."
-          className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="Search audit events, actors, or types..."
+          className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-cyan-500"
         />
       </div>
 
       <div className="space-y-3">
         {filtered.map((ev: any) => (
-          <Card key={ev.id} className="border-slate-200">
+          <Card key={ev.id} className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
             <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="capitalize text-[10px] font-bold">
+                  <Badge variant="outline" className="capitalize text-[10px] font-bold border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300">
                     {(ev.event_type || "event").replace(/_/g, " ")}
                   </Badge>
-                  <span className="text-[11px] text-slate-400 font-medium flex items-center gap-1">
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1">
                     <Clock className="w-3 h-3" /> {ev.timestamp || "Today"}
                   </span>
                 </div>
-                <p className="text-xs text-slate-700 leading-relaxed">{ev.description}</p>
+                <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">{ev.description}</p>
               </div>
-              <span className="text-xs text-slate-500 font-medium whitespace-nowrap">
-                Actor: <strong>{ev.actor || "System"}</strong>
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
+                Actor: <strong className="text-slate-800 dark:text-slate-200">{ev.actor || "System"}</strong>
               </span>
             </CardContent>
           </Card>

@@ -32,9 +32,10 @@ export default function StudentInterventionsPage() {
   useEffect(() => {
     api.getStudentInterventions()
       .then((data) => {
-        setInterventions(data);
-        if (data.length > 0) {
-          setSelectedIntervention(data[0]);
+        const list = Array.isArray(data) ? data : [];
+        setInterventions(list);
+        if (list.length > 0) {
+          setSelectedIntervention(list[0]);
         }
       })
       .catch((err) => console.error("Error fetching interventions:", err))

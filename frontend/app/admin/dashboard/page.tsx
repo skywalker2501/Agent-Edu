@@ -33,8 +33,8 @@ export default function AdminDashboardPage() {
           api.getUsers(),
           api.getAuditTrail(),
         ]);
-        if (usersRes.status === "fulfilled") setUsers(usersRes.value);
-        if (auditRes.status === "fulfilled") setAuditEvents(auditRes.value);
+        if (usersRes.status === "fulfilled" && Array.isArray(usersRes.value)) setUsers(usersRes.value);
+        if (auditRes.status === "fulfilled" && Array.isArray(auditRes.value)) setAuditEvents(auditRes.value);
       } catch (err) {
         console.error("Admin dashboard load error:", err);
       } finally {
@@ -44,14 +44,14 @@ export default function AdminDashboardPage() {
     loadData();
   }, []);
 
-  const displayUsers = users.length > 0 ? users : [
+  const displayUsers = Array.isArray(users) && users.length > 0 ? users : [
     { id: "u1", full_name: "Admin User", email: "admin@agentedu.org", role: "admin" },
     { id: "u2", full_name: "Dr. Alan Turing", email: "teacher@agentedu.org", role: "teacher" },
     { id: "u3", full_name: "Rahul Gupta", email: "rahul@agentedu.org", role: "student" },
     { id: "u4", full_name: "Priya Singh", email: "priya@agentedu.org", role: "student" },
   ];
 
-  const displayAudit = auditEvents.length > 0 ? auditEvents : [
+  const displayAudit = Array.isArray(auditEvents) && auditEvents.length > 0 ? auditEvents : [
     { id: "ae1", event_type: "teacher_decision", description: "Review decision saved: correct_alternative_method for Priya", timestamp: "Today at 4:45 PM", severity: "info" },
     { id: "ae2", event_type: "intervention_approved", description: "Intervention 'Worked Example' approved by Dr. Alan Turing for Rahul", timestamp: "Today at 10:05 AM", severity: "info" },
     { id: "ae3", event_type: "misconception_confirmed", description: "Stack Frame Returns Overwriting misconception confirmed by teacher", timestamp: "Yesterday at 3:30 PM", severity: "info" },
@@ -173,11 +173,11 @@ export default function AdminDashboardPage() {
                 <div key={u.id} className="p-4 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-[#181C28]/50 transition">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-[#6C63FF] dark:text-[#42D9FF] font-black flex items-center justify-center text-xs">
-                      {u.full_name?.charAt(0) || "U"}
+                      {(u.full_name || "U").charAt(0)}
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-slate-900 dark:text-[#F5F7FF]">{u.full_name}</p>
-                      <p className="text-[11px] text-slate-500 dark:text-[#929AAF]">{u.email}</p>
+                      <p className="text-xs font-bold text-slate-900 dark:text-[#F5F7FF]">{u.full_name || "User"}</p>
+                      <p className="text-[11px] text-slate-500 dark:text-[#929AAF]">{u.email || "No email"}</p>
                     </div>
                   </div>
                   <Badge variant={u.role === "admin" ? "hypothesis" : u.role === "teacher" ? "confirmed" : "mastered"} className="text-[10px] capitalize font-bold">
@@ -212,8 +212,8 @@ export default function AdminDashboardPage() {
                 <div key={ae.id} className="p-4 flex items-start gap-3 hover:bg-slate-50/50 dark:hover:bg-[#181C28]/50 transition">
                   <div className="w-2 h-2 rounded-full bg-[#6C63FF] mt-1.5 shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-slate-900 dark:text-[#F5F7FF] truncate">{ae.description}</p>
-                    <p className="text-[10px] text-slate-400 dark:text-[#929AAF] mt-0.5">{ae.timestamp}</p>
+                    <p className="text-xs font-bold text-slate-900 dark:text-[#F5F7FF] truncate">{ae.description || "System Audit Event"}</p>
+                    <p className="text-[10px] text-slate-400 dark:text-[#929AAF] mt-0.5">{ae.timestamp || "Recently"}</p>
                   </div>
                 </div>
               ))}

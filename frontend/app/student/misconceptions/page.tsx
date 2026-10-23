@@ -46,7 +46,7 @@ export default function StudentMisconceptionsPage() {
   }, [fetchMisconceptions]);
 
   const getStatusBadge = (status: string) => {
-    const s = status.toLowerCase();
+    const s = String(status || "").toLowerCase();
     if (s.includes("teacher_confirmed") || s.includes("confirmed")) {
       return (
         <Badge variant="confirmed" className="flex items-center gap-1">

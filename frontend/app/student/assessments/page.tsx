@@ -29,7 +29,7 @@ export default function StudentAssessmentsPage() {
     setError(null);
     try {
       const data = await api.getAssessments();
-      setAssessments(data);
+      setAssessments(Array.isArray(data) ? data : []);
     } catch (err: any) {
       console.error("Error fetching assessments:", err);
       setError(err?.message || "Could not load assessments. Please check your connection.");

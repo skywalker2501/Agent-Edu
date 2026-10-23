@@ -40,8 +40,8 @@ export default function TeacherDashboardPage() {
           api.getTeacherReviewQueue(),
           api.getClasses(),
         ]);
-        if (revRes.status === "fulfilled") setReviews(revRes.value);
-        if (clsRes.status === "fulfilled") setClasses(clsRes.value);
+        if (revRes.status === "fulfilled" && Array.isArray(revRes.value)) setReviews(revRes.value);
+        if (clsRes.status === "fulfilled" && Array.isArray(clsRes.value)) setClasses(clsRes.value);
       } catch (err) {
         console.error("Failed to load teacher dashboard:", err);
       } finally {
@@ -59,6 +59,8 @@ export default function TeacherDashboardPage() {
     { topic: "Recursion Trees", avgMastery: 48 },
   ];
 
+  const teacherFirstName = user?.full_name ? String(user.full_name).trim().split(/\s+/)[0] : "Alan";
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300 pb-12">
       {/* Teacher Workspace Hero */}
@@ -73,7 +75,7 @@ export default function TeacherDashboardPage() {
             <span className="text-xs text-slate-400">• Closed-Loop Pedagogical Control</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-            Welcome, Prof. {user?.full_name?.split(" ")[0] || "Alan"}
+            Welcome, Prof. {teacherFirstName}
           </h1>
           <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
             {reviews.length || 2} student alternative methods await pedagogical validation. Candidate interventions are queued for teacher approval.

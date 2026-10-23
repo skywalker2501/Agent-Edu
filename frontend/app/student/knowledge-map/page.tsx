@@ -124,7 +124,7 @@ export default function KnowledgeMapPage() {
     let miscCount = 0;
 
     return rawList.map((node) => {
-      const labelLower = node.label.toLowerCase();
+      const labelLower = String(node.label || "").toLowerCase();
       let key = "";
 
       if (labelLower.includes("array")) key = "arrays";
@@ -182,8 +182,10 @@ export default function KnowledgeMapPage() {
 
   // Helper to split long titles into clean two-line displays so text never gets chopped with '...'
   const formatNodeLines = (label: string, isMisconception: boolean) => {
+    const safeLabel = String(label || "").trim();
+    if (!safeLabel) return { line1: "Untitled", line2: "" };
     if (isMisconception) {
-      const clean = label.replace(/^Misconception:\s*/i, "");
+      const clean = safeLabel.replace(/^Misconception:\s*/i, "");
       if (clean.includes("Stack-Frame")) {
         return { line1: "Stack-Frame Execution", line2: "Misunderstood" };
       }
@@ -192,20 +194,20 @@ export default function KnowledgeMapPage() {
       return { line1: words.slice(0, mid).join(" "), line2: words.slice(mid).join(" ") };
     }
 
-    if (label.includes(" & ")) {
-      const parts = label.split(" & ");
-      return { line1: parts[0], line2: "& " + parts[1] };
+    if (safeLabel.includes(" & ")) {
+      const parts = safeLabel.split(" & ");
+      return { line1: parts[0], line2: "& " + (parts[1] || "") };
     }
-    if (label.includes("-and-")) {
-      const parts = label.split("-and-");
-      return { line1: parts[0], line2: "& " + parts[1] };
+    if (safeLabel.includes("-and-")) {
+      const parts = safeLabel.split("-and-");
+      return { line1: parts[0], line2: "& " + (parts[1] || "") };
     }
-    const words = label.split(" ");
+    const words = safeLabel.split(" ");
     if (words.length > 2) {
       const mid = Math.ceil(words.length / 2);
       return { line1: words.slice(0, mid).join(" "), line2: words.slice(mid).join(" ") };
     }
-    return { line1: label, line2: "" };
+    return { line1: safeLabel, line2: "" };
   };
 
   const stats = {

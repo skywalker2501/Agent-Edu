@@ -34,7 +34,7 @@ export default function StudentClassesPage() {
     setError(null);
     try {
       const data = await api.getClasses();
-      setClasses(data);
+      setClasses(Array.isArray(data) ? data : []);
     } catch (e: any) {
       setError(e?.message || "Failed to load classes");
     } finally {

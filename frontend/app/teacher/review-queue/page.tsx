@@ -25,7 +25,9 @@ export default function TeacherReviewQueuePage() {
 
   useEffect(() => {
     api.getTeacherReviewQueue()
-      .then(setReviews)
+      .then((res) => {
+        setReviews(Array.isArray(res) ? res : []);
+      })
       .catch((err) => {
         console.error("Failed to fetch review queue:", err);
       })
@@ -33,7 +35,7 @@ export default function TeacherReviewQueuePage() {
   }, []);
 
   // Demo fallback items if queue is empty
-  const displayReviews = reviews.length > 0 ? reviews : [
+  const displayReviews = Array.isArray(reviews) && reviews.length > 0 ? reviews : [
     {
       id: "rev-priya-string-rev",
       submission_id: "sub-priya-string-rev",
@@ -78,21 +80,21 @@ export default function TeacherReviewQueuePage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <ClipboardList className="w-6 h-6 text-indigo-600" /> Student Submissions Review Queue
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+            <ClipboardList className="w-6 h-6 text-indigo-600 dark:text-cyan-400" /> Student Submissions Review Queue
           </h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Intelligent teacher review workspace: validate AI preliminary evaluations, accept alternative solutions, and award authorized marks.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg border border-slate-200">
+        <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
           {(["all", "pending", "completed"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setFilter(tab)}
               className={`px-3 py-1.5 rounded-md text-xs font-semibold capitalize transition cursor-pointer ${
-                filter === tab ? "bg-white text-indigo-700 shadow-xs" : "text-slate-600 hover:text-slate-900"
+                filter === tab ? "bg-white dark:bg-slate-700 text-indigo-700 dark:text-cyan-300 shadow-xs" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
               }`}
             >
               {tab}
@@ -104,30 +106,30 @@ export default function TeacherReviewQueuePage() {
       {isLoading ? (
         <div className="space-y-4">
           {[1, 2].map((i) => (
-            <div key={i} className="h-32 bg-slate-200 rounded-xl animate-pulse" />
+            <div key={i} className="h-32 bg-slate-200 dark:bg-slate-800 rounded-xl animate-pulse" />
           ))}
         </div>
       ) : (
         <div className="space-y-4">
           {filtered.map((item: any) => (
-            <Card key={item.id} className="border-slate-200 hover:border-indigo-300 transition-all">
+            <Card key={item.id} className="border-slate-200 dark:border-slate-800 bg-white dark:bg-[#131722] hover:border-indigo-300 dark:hover:border-indigo-700 transition-all">
               <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2">
                     <Badge variant={item.review_type === "alternative_solution" ? "hypothesis" : "developing"}>
                       {item.review_type === "alternative_solution" ? "Alternative Solution Detected" : "Diagnostic Check"}
                     </Badge>
-                    <span className="text-xs font-semibold text-slate-700">
-                      Student: <strong>{item.student_name || "Student"}</strong>
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Student: <strong className="text-slate-900 dark:text-slate-100">{item.student_name || "Student"}</strong>
                     </span>
                   </div>
-                  <h3 className="text-base font-bold text-slate-900">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
                     {item.question_title || "Computer Science Exercise"}
                   </h3>
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
-                    <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                  <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-cyan-400" />
                     <span>AI Advisory:</span>
-                    <span className="font-semibold text-slate-700">
+                    <span className="font-semibold text-slate-700 dark:text-slate-300">
                       {item.ai_preliminary_evaluation?.suggested_outcome?.replace(/_/g, " ") || "Review required"}
                     </span>
                     <span>(Confidence: {Math.round((item.ai_preliminary_evaluation?.confidence || 0.9) * 100)}%)</span>
