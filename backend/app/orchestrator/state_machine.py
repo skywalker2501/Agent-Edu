@@ -110,7 +110,7 @@ class WorkflowOrchestrator:
         qids = [a.question_id for a in answers]
         q_res = await db.execute(select(Question).where(Question.id.in_(qids)))
         questions = q_res.scalars().all()
-        questions_map = {q.id: q} if len(questions) == 1 else {q.id: q for q in questions}
+        questions_map = {q.id: q for q in questions}
 
         # Retrieve grading result
         from app.models.assessment import GradingResult

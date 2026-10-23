@@ -3,9 +3,7 @@ import type { NextConfig } from "next";
 const BACKEND_URL =
   process.env.BACKEND_URL ||
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/api\/v1\/?$/, "") ||
-  (process.env.NODE_ENV === "production"
-    ? "https://rights-greg-thumbs-politicians.trycloudflare.com"
-    : "http://localhost:8000");
+  "http://127.0.0.1:8000";
 
 const nextConfig: NextConfig = {
   /* config options here */
