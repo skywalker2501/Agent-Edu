@@ -9,11 +9,12 @@ Base = declarative_base()
 
 # Configure Async Engine
 engine_kwargs = {}
-if settings.DATABASE_URL.startswith("sqlite"):
+db_url = settings.effective_database_url
+if db_url.startswith("sqlite"):
     engine_kwargs["connect_args"] = {"check_same_thread": False}
 
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    db_url,
     echo=(settings.ENVIRONMENT == "development"),
     future=True,
     **engine_kwargs

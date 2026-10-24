@@ -1,3 +1,4 @@
+import os
 from typing import List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
@@ -14,15 +15,21 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
 
-    # Database Configuration (Dynamic absolute path for local dev or environment variable for Render/production)
+    # Database Configuration (Dynamic path for local dev, /tmp for Vercel, or env var)
     DATABASE_URL: str = Field(
-        default="sqlite+aiosqlite:///agentedu.db",
+        default="sqlite+aiosqlite:////tmp/agentedu.db" if os.environ.get("VERCEL") else "sqlite+aiosqlite:///agentedu.db",
         description="PostgreSQL or SQLite database connection URL"
     )
     DATABASE_SYNC_URL: str = Field(
-        default="sqlite:///agentedu.db",
+        default="sqlite:////tmp/agentedu.db" if os.environ.get("VERCEL") else "sqlite:///agentedu.db",
         description="Sync URL for migrations or sync drivers"
     )
+
+    @property
+    def effective_database_url(self) -> str:
+        if os.environ.get("VERCEL"):
+            return "sqlite+aiosqlite:////tmp/agentedu.db"
+        return self.DATABASE_URL
 
     # Supabase Configuration
     SUPABASE_URL: Optional[str] = Field(default=None, description="Supabase project URL")

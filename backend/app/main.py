@@ -31,6 +31,16 @@ from app.api.health_routes import router as health_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting AgentEdu Backend Services...")
+    import os
+    if os.environ.get("VERCEL") and not os.path.exists("/tmp/agentedu.db"):
+        src = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "agentedu.db")
+        if os.path.exists(src):
+            try:
+                import shutil
+                shutil.copy2(src, "/tmp/agentedu.db")
+                logger.info(f"Copied pre-seeded database to /tmp/agentedu.db ({os.path.getsize('/tmp/agentedu.db')} bytes)")
+            except Exception as e:
+                logger.warning(f"Could not copy database to /tmp: {e}")
     await init_db()
     logger.info("AgentEdu Ready to accept connections.")
     yield
