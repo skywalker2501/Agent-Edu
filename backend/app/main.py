@@ -101,3 +101,17 @@ app.include_router(games_router, prefix=api_v1)
 app.include_router(curriculum_router, prefix=api_v1)
 app.include_router(live_class_router, prefix=api_v1)
 
+
+@app.get("/", tags=["Root"])
+async def root():
+    return {
+        "status": "online",
+        "service": settings.PROJECT_NAME,
+        "version": settings.VERSION,
+        "environment": settings.ENVIRONMENT,
+        "docs_url": "/docs",
+        "health_check": "/api/v1/health",
+        "frontend_url": "https://frontend-three-phi-92.vercel.app"
+    }
+
+
