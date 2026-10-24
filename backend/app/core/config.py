@@ -14,13 +14,13 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
 
-    # Database Configuration (Fixed absolute path so CLI and uvicorn share the exact same DB)
+    # Database Configuration (Dynamic absolute path for local dev or environment variable for Render/production)
     DATABASE_URL: str = Field(
-        default="sqlite+aiosqlite:////Users/rahulgupta/Desktop/Agent Edu/backend/agentedu.db",
+        default="sqlite+aiosqlite:///agentedu.db",
         description="PostgreSQL or SQLite database connection URL"
     )
     DATABASE_SYNC_URL: str = Field(
-        default="sqlite:////Users/rahulgupta/Desktop/Agent Edu/backend/agentedu.db",
+        default="sqlite:///agentedu.db",
         description="Sync URL for migrations or sync drivers"
     )
 
